@@ -1,0 +1,32 @@
+{
+  "name": "bethel",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "db:push": "turbo -F @bethel/db db:push",
+    "db:studio": "turbo -F @bethel/db db:studio",
+    "db:generate": "turbo -F @bethel/db db:generate",
+    "db:migrate": "turbo -F @bethel/db db:migrate"
+  },
+  "dependencies": {
+    "@bethel/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@bethel/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "turbo": "^2.9.16",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@11.6.0"
+}
