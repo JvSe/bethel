@@ -16,8 +16,8 @@ export const env = createEnv({
       .string()
       .min(32, "BETTER_AUTH_SECRET precisa ter pelo menos 32 caracteres."),
     BETTER_AUTH_URL: z.url(),
-    // RESEND_API_KEY: isProd ? z.string().min(1) : z.string().optional(),
-    // EMAIL_FROM: isProd ? z.string().min(1) : z.string().optional(),
+    RESEND_API_KEY: isProd ? z.string().min(1) : z.string().optional(),
+    EMAIL_FROM: isProd ? z.string().min(1) : z.string().optional(),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
