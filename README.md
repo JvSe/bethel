@@ -29,13 +29,15 @@ Não rode `prisma db seed` no banco da internet. O seed apaga todos os dados e s
 
 ### 3. Site — Cloudflare Workers
 
-O Bethel é um monorepo. No painel da Cloudflare, deixe o **root** na pasta do repositório (não em `apps/web`) e use estes comandos:
+O Bethel é um monorepo. No painel da Cloudflare, o **Root Directory** pode ser a pasta do repositório **ou** `apps/web`. Use estes comandos (não use o “migrate” automático do Wrangler — o npm não entende o `catalog:` do pnpm):
 
 | Campo | Valor |
 |-------|--------|
 | Install command | `pnpm install --frozen-lockfile` |
 | Build command | `pnpm run build` |
-| Deploy command | `npx wrangler deploy` |
+| Deploy command | `pnpm run cf:deploy` |
+
+Não use `npx wrangler deploy` no painel: o Wrangler tenta chamar o OpenNext pelo npm e quebra. Use `pnpm run cf:deploy`.
 
 Não deixe o painel rodar `wrangler` “migrate” ou criar o projeto sozinho: o npm não entende o `catalog:` do pnpm. A configuração já está no repositório (`wrangler.jsonc`).
 
