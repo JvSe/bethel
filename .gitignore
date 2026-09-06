@@ -43,6 +43,10 @@ lerna-debug.log*
 # Better-T-Stack
 .alchemy
 
+# Cloudflare / OpenNext
+.open-next
+.wrangler
+
 # Testing
 coverage
 .nyc_output

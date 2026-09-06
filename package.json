@@ -8,7 +8,8 @@
   "type": "module",
   "scripts": {
     "dev": "turbo dev",
-    "build": "turbo build",
+    "build": "pnpm --filter web exec opennextjs-cloudflare build",
+    "build:turbo": "turbo build",
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
@@ -28,7 +29,8 @@
     "@bethel/config": "workspace:*",
     "@types/node": "^22.13.14",
     "turbo": "^2.9.16",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wrangler": "^4.129.0"
   },
   "packageManager": "pnpm@11.6.0"
 }

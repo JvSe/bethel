@@ -1,15 +1,14 @@
 import { env } from "@bethel/env/server";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
 import { PrismaClient } from "../prisma/generated/client";
 
 export * from "../prisma/generated/enums";
 
 export function createPrismaClient() {
-  const adapter = new PrismaPg({
-    connectionString: env.DATABASE_URL,
+  return new PrismaClient({
+    adapter: new PrismaNeon({ connectionString: env.DATABASE_URL }),
   });
-  return new PrismaClient({ adapter });
 }
 
 declare global {

@@ -16,7 +16,7 @@ Você não precisa programar. São três contas grátis e alguns copiar e colar.
 2. Crie um projeto. Pode deixar o nome **bethel**.
 3. Na tela do projeto, copie **duas** connection strings (as duas começam com `postgresql://`):
    - **Pooled** (host com `-pooler`) — o site usa esta.
-   - **Direct** (sem `-pooler`) — o build da Vercel usa esta para criar as tabelas.
+   - **Direct** (sem `-pooler`) — o Prisma usa esta para criar as tabelas (`DIRECT_URL`).
 
 Não rode `prisma db seed` no banco da internet. O seed apaga todos os dados e só existe para o computador.
 
@@ -27,7 +27,35 @@ Não rode `prisma db seed` no banco da internet. O seed apaga todos os dados e s
 3. Em **Domains**, valide o domínio do seu e-mail (ex.: `seudominio.com`). Sem isso, o Resend só entrega para o e-mail da sua conta — as outras famílias não recebem convite nem “esqueci a senha”.
 4. Use um remetente desse domínio, por exemplo `Bethel <ola@seudominio.com>`.
 
-### 3. Site — Vercel
+### 3. Site — Cloudflare Workers
+
+O Bethel é um monorepo. No painel da Cloudflare, deixe o **root** na pasta do repositório (não em `apps/web`) e use estes comandos:
+
+| Campo | Valor |
+|-------|--------|
+| Install command | `pnpm install --frozen-lockfile` |
+| Build command | `pnpm run build` |
+| Deploy command | `npx wrangler deploy` |
+
+Não deixe o painel rodar `wrangler` “migrate” ou criar o projeto sozinho: o npm não entende o `catalog:` do pnpm. A configuração já está no repositório (`wrangler.jsonc`).
+
+Em **Settings → Variables and Secrets** (Production), cadastre:
+
+| Nome | O que colar |
+|------|-------------|
+| `DATABASE_URL` | Connection string **pooled** do Neon (host com `-pooler`) |
+| `DIRECT_URL` | Connection string **direta** do Neon (sem `-pooler`) |
+| `BETTER_AUTH_SECRET` | Um texto com pelo menos 32 caracteres. Gere em [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) e cole |
+| `BETTER_AUTH_URL` | Deixe `https://placeholder.workers.dev` por agora — você corrige depois do primeiro deploy |
+| `CORS_ORIGIN` | O mesmo valor de `BETTER_AUTH_URL` |
+| `RESEND_API_KEY` | A chave do Resend |
+| `EMAIL_FROM` | `Bethel <ola@seudominio.com>` — precisa ser um endereço do domínio validado no Resend |
+
+Depois do primeiro deploy, o Cloudflare mostra o endereço (algo como `https://bethel.<sua-conta>.workers.dev`). Atualize `BETTER_AUTH_URL` e `CORS_ORIGIN` para **esse endereço** (sem barra no final) e faça um novo deploy.
+
+O `next build` não precisa das variáveis para *compilar*, mas o site **não funciona** sem elas em runtime.
+
+### Alternativa — Vercel
 
 1. Coloque este projeto no GitHub (um repositório privado serve).
 2. Acesse [vercel.com](https://vercel.com), entre com a mesma conta do GitHub e clique em **Add New → Project**.
@@ -54,10 +82,6 @@ Pronto. Abra o endereço, clique em **Começar grátis**, crie a sua família e 
 
 Não use as contas de teste da Família Nunes no site publicado. Elas existem só no computador, para desenvolvimento. Nunca rode o seed contra o Neon de produção.
 
-### Cloudflare Pages
-
-O build do Next não precisa das variáveis para *compilar*, mas o site **não funciona** sem elas em runtime. Em **Settings → Environment variables** (Production), cadastre as mesmas chaves da tabela acima. Use o endereço real do Cloudflare em `BETTER_AUTH_URL` e `CORS_ORIGIN` (sem barra no final).
-
 ---
 
 ## No computador (opcional)
@@ -65,7 +89,7 @@ O build do Next não precisa das variáveis para *compilar*, mas o site **não f
 Se quiser ver o Bethel na sua máquina:
 
 1. Instale [Node.js](https://nodejs.org) (versão 22 ou mais nova) e [pnpm](https://pnpm.io/installation).
-2. Instale o [PostgreSQL](https://www.postgresql.org/download/) ou use um banco Neon também aqui.
+2. Use um banco Neon também aqui (o site não fala com Postgres local).
 3. No terminal, na pasta do projeto:
 
 ```bash

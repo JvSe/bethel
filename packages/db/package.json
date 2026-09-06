@@ -20,16 +20,14 @@
   },
   "dependencies": {
     "@bethel/env": "workspace:*",
-    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/adapter-neon": "7.8.0",
     "@prisma/client": "catalog:",
     "better-auth": "^1.6.29",
     "dotenv": "catalog:",
-    "pg": "^8.17.1",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@bethel/config": "workspace:*",
-    "@types/pg": "^8.16.0",
     "prisma": "^7.8.0",
     "tsx": "^4.23.12",
     "typescript": "catalog:"
