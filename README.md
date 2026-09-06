@@ -54,6 +54,10 @@ Pronto. Abra o endereço, clique em **Começar grátis**, crie a sua família e 
 
 Não use as contas de teste da Família Nunes no site publicado. Elas existem só no computador, para desenvolvimento. Nunca rode o seed contra o Neon de produção.
 
+### Cloudflare Pages
+
+O build do Next não precisa das variáveis para *compilar*, mas o site **não funciona** sem elas em runtime. Em **Settings → Environment variables** (Production), cadastre as mesmas chaves da tabela acima. Use o endereço real do Cloudflare em `BETTER_AUTH_URL` e `CORS_ORIGIN` (sem barra no final).
+
 ---
 
 ## No computador (opcional)
