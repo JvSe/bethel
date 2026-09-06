@@ -1,0 +1,14 @@
+model CalendarEvent {
+  id        String       @id @default(cuid())
+  familyId  String
+  family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  title     String
+  startsAt  DateTime
+  endsAt    DateTime?
+  category  String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([familyId])
+  @@map("calendar_event")
+}

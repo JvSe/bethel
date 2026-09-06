@@ -2,23 +2,20 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "bethel",
-    short_name: "bethel",
-    description: "my pwa app",
-    start_url: "/new",
+    name: "Bethel — Gestão do lar",
+    short_name: "Bethel",
+    description: "Sistema de gestão do lar para a família",
+    start_url: "/inicio",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#000000",
+    background_color: "#f6f5f1",
+    theme_color: "#4f8a6b",
+    lang: "pt-BR",
     icons: [
       {
-        src: "/favicon/web-app-manifest-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        src: "/favicon/web-app-manifest-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
+        src: "/favicon/favicon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
       },
     ],
   };

@@ -1,0 +1,76 @@
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum ContributionType {
+  TITHE
+  OFFERING
+  MISSIONS
+}
+
+model BudgetCategory {
+  id           String       @id @default(cuid())
+  familyId     String
+  family       Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name         String
+  monthlyLimit Decimal      @db.Decimal(10, 2)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  transactions Transaction[]
+
+  @@index([familyId])
+  @@map("budget_category")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  familyId    String
+  family      Organization    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  description String
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType
+  date        DateTime
+  categoryId  String?
+  category    BudgetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?           @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([familyId])
+  @@index([categoryId])
+  @@map("transaction")
+}
+
+model Contribution {
+  id          String           @id @default(cuid())
+  familyId    String
+  family      Organization     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  type        ContributionType
+  amount      Decimal          @db.Decimal(10, 2)
+  date        DateTime
+  createdById String?
+  createdBy   User?            @relation("ContributionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([familyId])
+  @@map("contribution")
+}
+
+model Bill {
+  id        String       @id @default(cuid())
+  familyId  String
+  family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name      String
+  amount    Decimal      @db.Decimal(10, 2)
+  dueDate   DateTime
+  paid      Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([familyId])
+  @@map("bill")
+}

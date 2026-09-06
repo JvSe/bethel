@@ -1,0 +1,22 @@
+{
+  "name": "@bethel/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bethel/db": "workspace:*",
+    "@bethel/env": "workspace:*",
+    "better-auth": "^1.6.29"
+  },
+  "devDependencies": {
+    "@bethel/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

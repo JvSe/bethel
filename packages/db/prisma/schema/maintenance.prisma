@@ -1,0 +1,22 @@
+enum MaintenanceFrequency {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+model MaintenanceItem {
+  id         String               @id @default(cuid())
+  familyId   String
+  family     Organization         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  title      String
+  type       String
+  frequency  MaintenanceFrequency
+  lastDoneAt DateTime?
+  nextDueAt  DateTime
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  @@index([familyId])
+  @@map("maintenance_item")
+}

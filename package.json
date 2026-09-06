@@ -15,7 +15,9 @@
     "db:push": "turbo -F @bethel/db db:push",
     "db:studio": "turbo -F @bethel/db db:studio",
     "db:generate": "turbo -F @bethel/db db:generate",
-    "db:migrate": "turbo -F @bethel/db db:migrate"
+    "db:migrate": "turbo -F @bethel/db db:migrate",
+    "db:migrate:deploy": "turbo -F @bethel/db db:migrate:deploy",
+    "test": "turbo -F web test"
   },
   "dependencies": {
     "@bethel/env": "workspace:*",

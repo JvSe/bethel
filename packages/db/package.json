@@ -13,13 +13,16 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@bethel/env": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "catalog:",
+    "better-auth": "^1.6.29",
     "dotenv": "catalog:",
     "pg": "^8.17.1",
     "zod": "catalog:"
@@ -28,6 +31,7 @@
     "@bethel/config": "workspace:*",
     "@types/pg": "^8.16.0",
     "prisma": "^7.8.0",
+    "tsx": "^4.23.12",
     "typescript": "catalog:"
   }
 }

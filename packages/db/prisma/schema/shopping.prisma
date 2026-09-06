@@ -1,0 +1,40 @@
+enum PantryLevel {
+  OK
+  LOW
+  OUT
+}
+
+model PantryItem {
+  id        String       @id @default(cuid())
+  familyId  String
+  family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name      String
+  quantity  String
+  category  String
+  level     PantryLevel  @default(OK)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  shoppingItems ShoppingItem[]
+
+  @@index([familyId])
+  @@map("pantry_item")
+}
+
+model ShoppingItem {
+  id                 String       @id @default(cuid())
+  familyId           String
+  family             Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name               String
+  quantity           String
+  category           String
+  checked            Boolean      @default(false)
+  estimatedPrice     Decimal?     @db.Decimal(10, 2)
+  sourcePantryItemId String?
+  sourcePantryItem   PantryItem?  @relation(fields: [sourcePantryItemId], references: [id], onDelete: SetNull)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([familyId])
+  @@map("shopping_item")
+}

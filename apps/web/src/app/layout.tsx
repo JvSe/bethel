@@ -1,23 +1,33 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import "../index.css";
-import Header from "@/components/header";
 import Providers from "@/components/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "bethel",
-  description: "bethel",
+  title: "Bethel — Gestão do lar",
+  description: "Sistema de gestão do lar para a família",
+  applicationName: "Bethel",
+  appleWebApp: {
+    capable: true,
+    title: "Bethel",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/favicon/favicon.svg",
+    apple: "/favicon/favicon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -26,14 +36,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
-        </Providers>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body
+        className={`${plusJakarta.variable} ${bricolage.variable}`}
+        style={{
+          fontFamily: "var(--font-jakarta), sans-serif",
+          WebkitFontSmoothing: "antialiased",
+          background: "var(--ds-bg)",
+          color: "var(--ds-text)",
+        }}
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

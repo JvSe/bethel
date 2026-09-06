@@ -1,0 +1,23 @@
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model Task {
+  id           String       @id @default(cuid())
+  familyId     String
+  family       Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  title        String
+  room         String
+  status       TaskStatus   @default(TODO)
+  position     Int
+  assignedToId String?
+  assignedTo   User?        @relation("TaskAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([familyId])
+  @@index([assignedToId])
+  @@map("task")
+}
