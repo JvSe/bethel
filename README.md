@@ -55,7 +55,13 @@ Em **Settings → Variables and Secrets** (Production), cadastre:
 
 Depois do primeiro deploy, o Cloudflare mostra o endereço (algo como `https://bethel.<sua-conta>.workers.dev`). Atualize `BETTER_AUTH_URL` e `CORS_ORIGIN` para **esse endereço** (sem barra no final) e faça um novo deploy.
 
-O `next build` não precisa das variáveis para *compilar*, mas o site **não funciona** sem elas em runtime.
+O `next build` não precisa das variáveis para *compilar*, mas o site **não funciona** sem elas em runtime. Cadastre-as em **Settings → Variables and Secrets** do Worker (não só nas variáveis de *build*). Depois de cada deploy, confira se ainda estão lá.
+
+Aplique as tabelas no Neon uma vez:
+
+```bash
+pnpm db:migrate:deploy
+```
 
 ### Alternativa — Vercel
 

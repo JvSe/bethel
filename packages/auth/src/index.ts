@@ -38,7 +38,7 @@ async function sendMail(params: { to: string; subject: string; html: string }) {
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
-  trustedOrigins: [env.CORS_ORIGIN],
+  trustedOrigins: [...new Set([env.CORS_ORIGIN, env.BETTER_AUTH_URL])],
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),

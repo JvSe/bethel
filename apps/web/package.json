@@ -9,7 +9,7 @@
     "start": "next start",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:deploy": "OPEN_NEXT_DEPLOY=true wrangler deploy",
+    "cf:deploy": "OPEN_NEXT_DEPLOY=true wrangler deploy --keep-vars",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "test": "vitest run"
   },
