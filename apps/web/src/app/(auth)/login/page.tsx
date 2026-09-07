@@ -48,7 +48,9 @@ function LoginForm() {
     if (!convite) {
       const { data: organizations } = await authClient.organization.list();
       if (organizations && organizations.length > 0) {
-        await authClient.organization.setActive({ organizationId: organizations[0].id });
+        await authClient.organization.setActive({
+          organizationId: organizations[0].id,
+        });
       }
     }
 
@@ -70,6 +72,7 @@ function LoginForm() {
             type="email"
             required
             autoComplete="email"
+            placeholder="exemplo@email.com"
             style={inputStyle}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -83,13 +86,18 @@ function LoginForm() {
             id="password"
             type="password"
             required
+            placeholder="********"
             autoComplete="current-password"
             style={inputStyle}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        {error && <p style={{ color: "#b3452c", fontSize: 13, marginBottom: 14 }}>{error}</p>}
+        {error && (
+          <p style={{ color: "#b3452c", fontSize: 13, marginBottom: 14 }}>
+            {error}
+          </p>
+        )}
         <button type="submit" style={buttonStyle} disabled={loading}>
           {loading ? "Entrando..." : "Entrar"}
         </button>
@@ -101,7 +109,10 @@ function LoginForm() {
       </p>
       <p style={footerTextStyle}>
         Ainda não tem conta?{" "}
-        <Link href={convite ? `/registro?convite=${convite}` : "/registro"} style={linkStyle}>
+        <Link
+          href={convite ? `/registro?convite=${convite}` : "/registro"}
+          style={linkStyle}
+        >
           Cadastre-se
         </Link>
       </p>
