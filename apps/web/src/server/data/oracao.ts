@@ -39,9 +39,15 @@ export async function updatePrayerRequestStatus(familyId: string, requestId: str
   }
 }
 
-export async function deletePrayerRequest(familyId: string, requestId: string) {
+export async function deletePrayerRequest(
+  familyId: string,
+  requestId: string,
+  actor: { userId: string; isOwner: boolean },
+) {
   const result = await prisma.prayerRequest.deleteMany({
-    where: { id: requestId, familyId },
+    where: actor.isOwner
+      ? { id: requestId, familyId }
+      : { id: requestId, familyId, authorId: actor.userId },
   });
   if (result.count === 0) throw new Error("Pedido de oração não encontrado.");
 }

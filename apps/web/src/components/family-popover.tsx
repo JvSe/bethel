@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useDashboard } from "@/contexts/dashboard-context";
 import { initials } from "@/lib/format";
+import { inviteMemberAction } from "@/server/invite-actions";
 
 interface FamilyMember {
   memberId: string;
@@ -28,12 +29,6 @@ const ACCENTS: { key: "salvia" | "azul" | "terracota" | "ameixa"; color: string;
   { key: "terracota", color: "#c0764f", label: "Terracota" },
   { key: "ameixa", color: "#8a5b86", label: "Ameixa" },
 ];
-
-const INVITE_ERROR_MESSAGES: Record<string, string> = {
-  YOU_ARE_NOT_ALLOWED_TO_INVITE_USERS_TO_THIS_ORGANIZATION: "Você não tem permissão para convidar membros.",
-  USER_IS_ALREADY_INVITED_TO_THIS_ORGANIZATION: "Este e-mail já tem um convite pendente.",
-  USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: "Este e-mail já pertence a um membro da família.",
-};
 
 export default function FamilyPopover({ familyId, familyName, members, isOwner, currentUserId }: FamilyPopoverProps) {
   const router = useRouter();
@@ -65,21 +60,16 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
     setInviteError(null);
     setCopied(false);
 
-    const { data, error } = await authClient.organization.inviteMember({
-      email: inviteEmail,
-      role: "member",
-    });
+    const result = await inviteMemberAction(inviteEmail);
 
     setInviteLoading(false);
 
-    if (error || !data) {
-      setInviteError(
-        (error?.code && INVITE_ERROR_MESSAGES[error.code]) || error?.message || "Não foi possível criar o convite.",
-      );
+    if (!result.success) {
+      setInviteError(result.error);
       return;
     }
 
-    setInviteLink(`${window.location.origin}/aceitar-convite?id=${data.id}`);
+    setInviteLink(`${window.location.origin}/aceitar-convite?id=${result.invitationId}`);
   }
 
   async function handleLeave() {
@@ -265,6 +255,7 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
             {removeError && <div style={{ fontSize: 11.5, color: "#b3452c" }}>{removeError}</div>}
           </div>
 
+          {isOwner && (
           <div style={{ borderTop: "1px solid var(--ds-border)", paddingTop: 12, marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "var(--ds-muted)", textTransform: "uppercase", marginBottom: 8 }}>
               Convidar membro
@@ -345,6 +336,7 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
               </form>
             )}
           </div>
+          )}
 
           <div style={{ borderTop: "1px solid var(--ds-border)", paddingTop: 12, marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "var(--ds-muted)", textTransform: "uppercase", marginBottom: 8 }}>

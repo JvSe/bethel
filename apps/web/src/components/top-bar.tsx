@@ -3,6 +3,7 @@
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { Eye, EyeClosed, Menu, Moon, Search } from "reicon-react";
 import { useDashboard } from "@/contexts/dashboard-context";
 
 interface TopBarProps {
@@ -62,11 +63,7 @@ export default function TopBar({ title, subtitle, action }: TopBarProps) {
             color: "var(--ds-muted)",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <path d="M4 7 H20" />
-            <path d="M4 12 H20" />
-            <path d="M4 17 H20" />
-          </svg>
+          <Menu size={18} />
         </button>
         <div style={{ minWidth: 0 }}>
           <h1
@@ -101,10 +98,7 @@ export default function TopBar({ title, subtitle, action }: TopBarProps) {
             width: 210,
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="M16 16 L20 20" />
-          </svg>
+          <Search size={16} />
           <input
             type="search"
             value={searchQuery}
@@ -141,10 +135,7 @@ export default function TopBar({ title, subtitle, action }: TopBarProps) {
             color: "var(--ds-muted)",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-            <circle cx="12" cy="12" r="8" />
-            <path d="M12 4 A8 8 0 0 1 12 20 Z" fill="currentColor" stroke="none" />
-          </svg>
+          <Moon size={18} />
         </button>
 
         <button
@@ -165,18 +156,7 @@ export default function TopBar({ title, subtitle, action }: TopBarProps) {
             transition: "background 0.15s",
           }}
         >
-          {privacyVisible ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 12 C5 6 19 6 22 12 C19 18 5 18 2 12 Z" />
-              <circle cx="12" cy="12" r="2.7" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20C7 20 2.73 16.39 1 12a18.45 18.45 0 0 1 5.06-7.94" />
-              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c5 0 9.27 3.61 11 8a18.5 18.5 0 0 1-2.16 3.72" />
-              <line x1="1" y1="1" x2="23" y2="23" />
-            </svg>
-          )}
+          {privacyVisible ? <Eye size={18} /> : <EyeClosed size={18} />}
         </button>
 
         {action}

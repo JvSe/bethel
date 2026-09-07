@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@bethel/auth/client";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -39,20 +40,27 @@ function RegistroForm() {
     setLoading(true);
     setError(null);
 
+    const callbackURL = convite ? `/aceitar-convite?id=${convite}` : "/onboarding";
     const { error } = await authClient.signUp.email({
-      name,
+      name: name.trim().slice(0, 80),
       email,
       password,
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+      callbackURL,
     });
 
     if (error) {
       setLoading(false);
-      setError(error.message ?? "Não foi possível criar sua conta.");
+      setError("Não foi possível criar sua conta. Tente de novo em instantes.");
       return;
     }
 
-    router.push(convite ? `/aceitar-convite?id=${convite}` : "/onboarding");
+    router.push(
+      (convite ? `/verificar-email?convite=${encodeURIComponent(convite)}` : "/verificar-email") as Route,
+    );
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("bethel-verify-email", email);
+    }
     router.refresh();
   }
 
@@ -72,6 +80,7 @@ function RegistroForm() {
             type="text"
             required
             autoComplete="name"
+            maxLength={80}
             style={inputStyle}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -100,6 +109,7 @@ function RegistroForm() {
             type="password"
             required
             minLength={8}
+            maxLength={128}
             autoComplete="new-password"
             style={inputStyle}
             value={password}

@@ -62,6 +62,7 @@ export default function OnboardingPage() {
             type="text"
             required
             placeholder="Família Nunes"
+            maxLength={80}
             style={inputStyle}
             value={name}
             onChange={(e) => setName(e.target.value)}

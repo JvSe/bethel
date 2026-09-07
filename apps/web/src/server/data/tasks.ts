@@ -16,7 +16,19 @@ export async function getTasks(familyId: string) {
   }));
 }
 
+async function assertAssigneeInFamily(familyId: string, assignedToId: string | null | undefined) {
+  if (!assignedToId) return;
+  const member = await prisma.member.findFirst({
+    where: { userId: assignedToId, organizationId: familyId },
+    select: { id: true },
+  });
+  if (!member) throw new Error("Membro inválido.");
+}
+
 export async function createTask(familyId: string, input: CreateTaskInput) {
+  const assignedToId = input.assignedToId || null;
+  await assertAssigneeInFamily(familyId, assignedToId);
+
   const lastPosition = await prisma.task.count({
     where: { familyId, status: TaskStatus.TODO },
   });
@@ -26,7 +38,7 @@ export async function createTask(familyId: string, input: CreateTaskInput) {
       familyId,
       title: input.title,
       room: input.room,
-      assignedToId: input.assignedToId || null,
+      assignedToId,
       status: TaskStatus.TODO,
       position: lastPosition,
     },
@@ -34,12 +46,14 @@ export async function createTask(familyId: string, input: CreateTaskInput) {
 }
 
 export async function updateTask(familyId: string, taskId: string, input: CreateTaskInput) {
+  const assignedToId = input.assignedToId || null;
+  await assertAssigneeInFamily(familyId, assignedToId);
   const result = await prisma.task.updateMany({
     where: { id: taskId, familyId },
     data: {
       title: input.title,
       room: input.room,
-      assignedToId: input.assignedToId || null,
+      assignedToId,
     },
   });
 

@@ -1,16 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireFamilySession } from "@/server/auth";
+import { requireFamilyAction } from "@/server/auth";
 import { provisionNewFamily } from "@/server/data/provision";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
 export async function provisionNewFamilyAction(): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
 
   try {
-    await provisionNewFamily(familyId);
+    await provisionNewFamily(authz.session.familyId);
   } catch (error) {
     return {
       success: false,

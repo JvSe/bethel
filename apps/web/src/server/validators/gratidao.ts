@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { longTextSchema } from "./common";
 
 export const createGratitudeEntrySchema = z.object({
-  text: z.string().trim().min(1, "Escreva sua gratidão."),
+  text: longTextSchema("Escreva sua gratidão."),
 });
 
 export type CreateGratitudeEntryInput = z.infer<typeof createGratitudeEntrySchema>;

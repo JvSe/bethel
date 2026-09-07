@@ -32,7 +32,7 @@ import {
 import { Input } from "@bethel/ui/components/input";
 import { Label } from "@bethel/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bethel/ui/components/select";
-import { PlusIcon } from "lucide-react";
+import { Plus } from "reicon-react";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -241,7 +241,7 @@ export default function TarefasView({ tasks, members }: TarefasViewProps) {
                 />
               }
             >
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
               Adicionar
             </DialogTrigger>
             <DialogContent>

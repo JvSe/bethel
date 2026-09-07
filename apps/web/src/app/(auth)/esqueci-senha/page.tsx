@@ -8,26 +8,18 @@ import { buttonStyle, fieldStyle, footerTextStyle, inputStyle, labelStyle, linkS
 export default function EsqueciSenhaPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
-    const { error } = await authClient.requestPasswordReset({
+    await authClient.requestPasswordReset({
       email,
       redirectTo: "/redefinir-senha",
     });
 
     setLoading(false);
-
-    if (error) {
-      setError(error.message ?? "Não foi possível enviar o e-mail.");
-      return;
-    }
-
     setSent(true);
   }
 
@@ -66,7 +58,6 @@ export default function EsqueciSenhaPage() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-        {error && <p style={{ color: "#b3452c", fontSize: 13, marginBottom: 14 }}>{error}</p>}
         <button type="submit" style={buttonStyle} disabled={loading}>
           {loading ? "Enviando..." : "Enviar link"}
         </button>

@@ -11,7 +11,7 @@ export default function DevocionalError({ reset }: { error: Error & { digest?: s
           color: "var(--ds-text)",
         }}
       >
-        Não foi possível carregar o devocional
+        Não foi possível carregar o versículo do dia
       </h2>
       <p style={{ color: "var(--ds-muted)", fontSize: 14, marginTop: 8 }}>Tente novamente em instantes.</p>
       <button

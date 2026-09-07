@@ -58,9 +58,6 @@ async function main() {
   await prisma.$transaction([
     prisma.gratitudeEntry.deleteMany(),
     prisma.prayerRequest.deleteMany(),
-    prisma.devotionalCompletion.deleteMany(),
-    prisma.familyDevotional.deleteMany(),
-    prisma.devotionalPlan.deleteMany(),
     prisma.calendarEvent.deleteMany(),
     prisma.maintenanceItem.deleteMany(),
     prisma.task.deleteMany(),
@@ -75,6 +72,7 @@ async function main() {
     prisma.organization.deleteMany(),
     prisma.account.deleteMany(),
     prisma.session.deleteMany(),
+    prisma.rateLimit.deleteMany(),
     prisma.user.deleteMany(),
   ]);
 
@@ -292,27 +290,6 @@ async function main() {
           category: evento.cat,
         };
       }),
-    ),
-  });
-
-  // Devocional
-  const devotionalContent = Array.from({ length: 31 }, (_, i) => ({
-    day: i + 1,
-    reference: `Provérbios ${i + 1}`,
-  }));
-  const plan = await prisma.devotionalPlan.create({
-    data: { title: "Provérbios em 31 dias", content: devotionalContent },
-  });
-  const familyDevotional = await prisma.familyDevotional.create({
-    data: { familyId: family.id, planId: plan.id, startedAt: daysFromNow(-20) },
-  });
-  await prisma.devotionalCompletion.createMany({
-    data: [jv, sn, en].flatMap((user) =>
-      [19, 20].map((day) => ({
-        familyDevotionalId: familyDevotional.id,
-        userId: user.id,
-        day,
-      })),
     ),
   });
 

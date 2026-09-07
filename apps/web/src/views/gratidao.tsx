@@ -19,7 +19,7 @@ import {
 } from "@bethel/ui/components/dialog";
 import { Label } from "@bethel/ui/components/label";
 import { Textarea } from "@bethel/ui/components/textarea";
-import { PlusIcon } from "lucide-react";
+import { Plus } from "reicon-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -84,7 +84,7 @@ export default function GratidaoView({ entries }: GratidaoViewProps) {
             }}
           >
             <DialogTrigger render={<Button className="gap-2 shadow-sm" />}>
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
               Adicionar
             </DialogTrigger>
             <DialogContent>

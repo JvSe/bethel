@@ -21,7 +21,7 @@ import {
 import { Input } from "@bethel/ui/components/input";
 import { Label } from "@bethel/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bethel/ui/components/select";
-import { PlusIcon } from "lucide-react";
+import { Plus, Settings } from "reicon-react";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -49,18 +49,6 @@ interface MaintenanceItem {
 
 interface ManutencaoViewProps {
   items: MaintenanceItem[];
-}
-
-function GearIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3.4" />
-      <path d="M12 4 V6.5" /><path d="M12 17.5 V20" />
-      <path d="M4 12 H6.5" /><path d="M17.5 12 H20" />
-      <path d="M6.3 6.3 L8 8" /><path d="M16 16 L17.7 17.7" />
-      <path d="M17.7 6.3 L16 8" /><path d="M8 16 L6.3 17.7" />
-    </svg>
-  );
 }
 
 function dueInfo(nextDueAt: Date) {
@@ -129,7 +117,7 @@ export default function ManutencaoView({ items }: ManutencaoViewProps) {
             }}
           >
             <DialogTrigger render={<Button className="gap-2 shadow-sm" />}>
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
               Adicionar
             </DialogTrigger>
             <DialogContent>
@@ -216,7 +204,7 @@ export default function ManutencaoView({ items }: ManutencaoViewProps) {
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  <GearIcon />
+                  <Settings size={22} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ds-text)" }}>{m.title}</div>

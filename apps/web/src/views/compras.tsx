@@ -19,7 +19,7 @@ import {
 } from "@bethel/ui/components/dialog";
 import { Input } from "@bethel/ui/components/input";
 import { Label } from "@bethel/ui/components/label";
-import { PlusIcon } from "lucide-react";
+import { Check, Plus } from "reicon-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -141,7 +141,7 @@ export default function ComprasView({ items }: ComprasViewProps) {
             }}
           >
             <DialogTrigger render={<Button className="gap-2 shadow-sm" />}>
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
               Adicionar
             </DialogTrigger>
             <DialogContent>
@@ -237,9 +237,7 @@ export default function ComprasView({ items }: ComprasViewProps) {
                         }}
                       >
                         {done && (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M5 12 L10 17 L19 7" />
-                          </svg>
+                          <Check size={13} color="#fff" />
                         )}
                       </div>
                       <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: done ? "var(--ds-muted)" : "var(--ds-text)", textDecoration: done ? "line-through" : "none" }}>

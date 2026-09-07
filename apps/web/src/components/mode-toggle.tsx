@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@bethel/ui/components/dropdown-menu";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "reicon-react";
 import { useTheme } from "next-themes";
 import * as React from "react";
 

@@ -3,47 +3,6 @@ enum PrayerStatus {
   ANSWERED
 }
 
-model DevotionalPlan {
-  id        String   @id @default(cuid())
-  title     String
-  content   Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  familyDevotionals FamilyDevotional[]
-
-  @@map("devotional_plan")
-}
-
-model FamilyDevotional {
-  id        String         @id @default(cuid())
-  familyId  String         @unique
-  family    Organization   @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  planId    String
-  plan      DevotionalPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  startedAt DateTime
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-
-  completions DevotionalCompletion[]
-
-  @@map("family_devotional")
-}
-
-model DevotionalCompletion {
-  id                 String           @id @default(cuid())
-  familyDevotionalId String
-  familyDevotional   FamilyDevotional @relation(fields: [familyDevotionalId], references: [id], onDelete: Cascade)
-  userId             String
-  user               User             @relation("DevotionalCompletionUser", fields: [userId], references: [id], onDelete: Cascade)
-  day                Int
-  completedAt        DateTime         @default(now())
-
-  @@unique([familyDevotionalId, userId, day])
-  @@index([familyDevotionalId])
-  @@map("devotional_completion")
-}
-
 model PrayerRequest {
   id        String       @id @default(cuid())
   familyId  String

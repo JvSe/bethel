@@ -1,3 +1,5 @@
+import { Home } from "reicon-react";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -26,10 +28,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             color: "#fff",
           }}
         >
-          <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 11 L12 4 L20 11" />
-            <path d="M6 10 V20 H18 V10" />
-          </svg>
+          <Home size={22} />
         </div>
         <div>
           <div

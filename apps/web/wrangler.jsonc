@@ -4,18 +4,28 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "observability": {
-    "enabled": true
-  },
   "keep_vars": true,
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "bethel"
-    }
-  ]
+      "service": "bethel",
+    },
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": false,
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true,
+    },
+  },
 }

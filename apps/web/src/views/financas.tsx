@@ -30,7 +30,7 @@ import {
 import { Input } from "@bethel/ui/components/input";
 import { Label } from "@bethel/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bethel/ui/components/select";
-import { PlusIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, Candle, Plus } from "reicon-react";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -457,7 +457,7 @@ export default function FinancasView({ balance, income, expense, budget, dizimo,
               }}
             >
               <DialogTrigger render={<Button className="gap-2 shadow-sm" />}>
-                <PlusIcon className="size-4" />
+                <Plus className="size-4" />
                 Nova transação
               </DialogTrigger>
               <DialogContent>
@@ -578,9 +578,7 @@ export default function FinancasView({ balance, income, expense, budget, dizimo,
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, gap: 16, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
               <div style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 11, background: "rgba(199,154,62,.13)", color: "#c79a3e", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M12 4 V20" /><path d="M7 9 H17" />
-                </svg>
+                <Candle size={19} />
               </div>
               <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: "var(--ds-text)" }}>Dízimos &amp; Ofertas</h3>
             </div>
@@ -739,12 +737,7 @@ export default function FinancasView({ balance, income, expense, budget, dizimo,
                           display: "flex", alignItems: "center", justifyContent: "center",
                         }}
                       >
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          {entrada
-                            ? <><path d="M7 13 L12 8 L17 13" /><path d="M12 8 V18" /></>
-                            : <><path d="M7 11 L12 16 L17 11" /><path d="M12 16 V6" /></>
-                          }
-                        </svg>
+                        {entrada ? <ArrowUp size={17} /> : <ArrowDown size={17} />}
                       </div>
                       <div>
                         <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ds-text)" }}>{t.description}</div>

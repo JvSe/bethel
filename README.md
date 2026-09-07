@@ -132,13 +132,13 @@ Contas de demonstração (só depois do seed): `joaovitor@familianunes.dev`, `sa
 
 ## O que o produto faz
 
-- **Início** — resumo do mês, contas, tarefas e leitura do dia
+- **Início** — resumo do mês, contas, tarefas e versículo do dia
 - **Finanças** — receitas, despesas, orçamento, contas a pagar, dízimo e ofertas
 - **Compras e despensa** — lista do mercado e o que está acabando em casa
 - **Tarefas** — quadro para a família (a fazer, em andamento, concluído)
 - **Manutenção** — o que vence na casa, com o botão Feito para remarcar
 - **Calendário** — semana da família
-- **Devocional, oração e gratidão** — hábitos de fé compartilhados
+- **Versículo do dia, oração e gratidão** — hábitos de fé compartilhados
 
 No celular, abra o site no navegador. No Safari (iPhone) ou Chrome (Android) você pode **Adicionar à tela de início** e usar como um aplicativo.
 

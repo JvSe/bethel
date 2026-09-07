@@ -34,7 +34,11 @@ function LoginForm() {
 
     if (error) {
       setLoading(false);
-      setError("E-mail ou senha inválidos.");
+      setError(
+        error.code === "EMAIL_NOT_VERIFIED"
+          ? "Confirme seu e-mail para entrar. Olhe a caixa de entrada e o spam."
+          : "E-mail ou senha inválidos.",
+      );
       return;
     }
 

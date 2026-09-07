@@ -1,4 +1,5 @@
 import { Tabs } from "expo-router";
+import { Compass, Home } from "reicon-react-native";
 import { useUnistyles } from "react-native-unistyles";
 
 import { TabBarIcon } from "@/components/tabbar-icon";
@@ -22,14 +23,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon icon={Home} color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="two"
         options={{
           title: "Explore",
-          tabBarIcon: ({ color }) => <TabBarIcon name="compass" color={color} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon icon={Compass} color={color} focused={focused} />,
         }}
       />
     </Tabs>

@@ -1,4 +1,4 @@
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Home, Widget } from "reicon-react-native";
 import { Link } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { useUnistyles } from "react-native-unistyles";
@@ -33,7 +33,7 @@ const DrawerLayout = () => {
           headerTitle: "Home",
           drawerLabel: "Home",
           drawerIcon: ({ size, color }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Home size={size} color={typeof color === "string" ? color : undefined} />
           ),
         }}
       />
@@ -43,7 +43,7 @@ const DrawerLayout = () => {
           headerTitle: "Tabs",
           drawerLabel: "Tabs",
           drawerIcon: ({ size, color }) => (
-            <MaterialIcons name="border-bottom" size={size} color={color} />
+            <Widget size={size} color={typeof color === "string" ? color : undefined} />
           ),
           headerRight: () => (
             <Link href="/modal" asChild>

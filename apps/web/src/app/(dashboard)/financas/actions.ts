@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireFamilySession } from "@/server/auth";
+import { requireFamilyAction } from "@/server/auth";
 import {
   createBill,
   createBudgetCategory,
@@ -16,6 +16,7 @@ import {
   updateBudgetCategory,
   updateTransaction,
 } from "@/server/data/financas";
+import { entityIdSchema } from "@/server/validators/common";
 import {
   createBillSchema,
   createBudgetCategorySchema,
@@ -36,21 +37,29 @@ export async function createTransactionAction(input: unknown): Promise<ActionRes
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId, userId } = await requireFamilySession();
-  await createTransaction(familyId, userId, parsed.data);
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
+
+  try {
+    await createTransaction(authz.session.familyId, authz.session.userId, parsed.data);
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Erro ao criar transação." };
+  }
   revalidateFinancas();
   return { success: true };
 }
 
 export async function updateTransactionAction(transactionId: string, input: unknown): Promise<ActionResult> {
+  const id = entityIdSchema.safeParse(transactionId);
   const parsed = createTransactionSchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!id.success || !parsed.success) {
+    return { success: false, error: parsed.error?.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await updateTransaction(familyId, transactionId, parsed.data);
+    await updateTransaction(authz.session.familyId, id.data, parsed.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar transação." };
   }
@@ -59,9 +68,13 @@ export async function updateTransactionAction(transactionId: string, input: unkn
 }
 
 export async function deleteTransactionAction(transactionId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(transactionId);
+  if (!id.success) return { success: false, error: "Transação inválida." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await deleteTransaction(familyId, transactionId);
+    await deleteTransaction(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar transação." };
   }
@@ -75,21 +88,24 @@ export async function createBillAction(input: unknown): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
-  await createBill(familyId, parsed.data);
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
+  await createBill(authz.session.familyId, parsed.data);
   revalidateFinancas();
   return { success: true };
 }
 
 export async function updateBillAction(billId: string, input: unknown): Promise<ActionResult> {
+  const id = entityIdSchema.safeParse(billId);
   const parsed = createBillSchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!id.success || !parsed.success) {
+    return { success: false, error: parsed.error?.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await updateBill(familyId, billId, parsed.data);
+    await updateBill(authz.session.familyId, id.data, parsed.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar conta." };
   }
@@ -98,10 +114,14 @@ export async function updateBillAction(billId: string, input: unknown): Promise<
 }
 
 export async function markBillPaidAction(billId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(billId);
+  if (!id.success) return { success: false, error: "Conta inválida." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
 
   try {
-    await setBillPaid(familyId, billId, true);
+    await setBillPaid(authz.session.familyId, id.data, true);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar conta." };
   }
@@ -111,10 +131,14 @@ export async function markBillPaidAction(billId: string): Promise<ActionResult> 
 }
 
 export async function unmarkBillPaidAction(billId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(billId);
+  if (!id.success) return { success: false, error: "Conta inválida." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
 
   try {
-    await setBillPaid(familyId, billId, false);
+    await setBillPaid(authz.session.familyId, id.data, false);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar conta." };
   }
@@ -124,9 +148,13 @@ export async function unmarkBillPaidAction(billId: string): Promise<ActionResult
 }
 
 export async function deleteBillAction(billId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(billId);
+  if (!id.success) return { success: false, error: "Conta inválida." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await deleteBill(familyId, billId);
+    await deleteBill(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar conta." };
   }
@@ -140,16 +168,21 @@ export async function createContributionAction(input: unknown): Promise<ActionRe
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId, userId } = await requireFamilySession();
-  await createContribution(familyId, userId, parsed.data);
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
+  await createContribution(authz.session.familyId, authz.session.userId, parsed.data);
   revalidateFinancas();
   return { success: true };
 }
 
 export async function deleteContributionAction(contributionId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(contributionId);
+  if (!id.success) return { success: false, error: "Contribuição inválida." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await deleteContribution(familyId, contributionId);
+    await deleteContribution(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar contribuição." };
   }
@@ -163,21 +196,24 @@ export async function createBudgetCategoryAction(input: unknown): Promise<Action
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
-  await createBudgetCategory(familyId, parsed.data);
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
+  await createBudgetCategory(authz.session.familyId, parsed.data);
   revalidateFinancas();
   return { success: true };
 }
 
 export async function updateBudgetCategoryAction(categoryId: string, input: unknown): Promise<ActionResult> {
+  const id = entityIdSchema.safeParse(categoryId);
   const parsed = createBudgetCategorySchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!id.success || !parsed.success) {
+    return { success: false, error: parsed.error?.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await updateBudgetCategory(familyId, categoryId, parsed.data);
+    await updateBudgetCategory(authz.session.familyId, id.data, parsed.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar categoria." };
   }
@@ -186,9 +222,13 @@ export async function updateBudgetCategoryAction(categoryId: string, input: unkn
 }
 
 export async function deleteBudgetCategoryAction(categoryId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(categoryId);
+  if (!id.success) return { success: false, error: "Categoria inválida." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await deleteBudgetCategory(familyId, categoryId);
+    await deleteBudgetCategory(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar categoria." };
   }

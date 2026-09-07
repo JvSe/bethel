@@ -4,19 +4,19 @@ import { getShoppingItems } from "@/server/data/compras";
 import { getTasks } from "@/server/data/tasks";
 import { getPantryItems } from "@/server/data/despensa";
 import { getMaintenanceItems } from "@/server/data/manutencao";
-import { getDevotionalOverview } from "@/server/data/devocional";
+import { getDailyVerse } from "@/server/data/devocional";
 
 const PANTRY_SEVERITY: Record<PantryLevel, number> = { OUT: 0, LOW: 1, OK: 2 };
 
-export async function getHomeOverview(familyId: string, userId: string) {
-  const [organization, finance, shoppingItems, tasks, pantryItems, maintenanceItems, devotional] = await Promise.all([
+export async function getHomeOverview(familyId: string) {
+  const [organization, finance, shoppingItems, tasks, pantryItems, maintenanceItems, dailyVerse] = await Promise.all([
     prisma.organization.findUnique({ where: { id: familyId }, select: { name: true } }),
     getFinanceOverview(familyId),
     getShoppingItems(familyId),
     getTasks(familyId),
     getPantryItems(familyId),
     getMaintenanceItems(familyId),
-    getDevotionalOverview(familyId, userId),
+    getDailyVerse(),
   ]);
 
   const pendingShoppingItems = shoppingItems.filter((item) => !item.checked);
@@ -43,7 +43,7 @@ export async function getHomeOverview(familyId: string, userId: string) {
     doneTasksCount,
     budget: finance.budget,
     upcomingBills: unpaidBills.slice(0, 5),
-    devotional,
+    dailyVerse,
     todayTasks: openTasks.slice(0, 5),
     lowPantryItems: lowPantryItems.slice(0, 4),
     upcomingMaintenance: maintenanceItems.slice(0, 4),

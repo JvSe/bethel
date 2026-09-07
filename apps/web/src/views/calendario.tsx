@@ -19,7 +19,7 @@ import {
 } from "@bethel/ui/components/dialog";
 import { Input } from "@bethel/ui/components/input";
 import { Label } from "@bethel/ui/components/label";
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "reicon-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -147,7 +147,7 @@ export default function CalendarioView({ weekStart, events, weekOffset }: Calend
                 />
               }
             >
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
               Adicionar
             </DialogTrigger>
             <DialogContent>
@@ -208,7 +208,7 @@ export default function CalendarioView({ weekStart, events, weekOffset }: Calend
             size="icon-sm"
             aria-label="Semana anterior"
           >
-            <ChevronLeftIcon className="size-4" />
+            <ChevronLeft className="size-4" />
           </Button>
           <Button
             render={<Link href={`/calendario?semana=${weekOffset + 1}`} />}
@@ -217,7 +217,7 @@ export default function CalendarioView({ weekStart, events, weekOffset }: Calend
             size="icon-sm"
             aria-label="Próxima semana"
           >
-            <ChevronRightIcon className="size-4" />
+            <ChevronRight className="size-4" />
           </Button>
         </div>
         <div className="ds-cols-7" style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 12, alignItems: "start" }}>

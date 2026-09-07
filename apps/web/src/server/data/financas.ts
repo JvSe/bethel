@@ -112,7 +112,18 @@ export async function getFinanceOverview(familyId: string) {
   };
 }
 
+async function assertCategoryInFamily(familyId: string, categoryId: string | null | undefined) {
+  if (!categoryId) return;
+  const category = await prisma.budgetCategory.findFirst({
+    where: { id: categoryId, familyId },
+    select: { id: true },
+  });
+  if (!category) throw new Error("Categoria inválida.");
+}
+
 export async function createTransaction(familyId: string, userId: string, input: CreateTransactionInput) {
+  const categoryId = input.categoryId || null;
+  await assertCategoryInFamily(familyId, categoryId);
   await prisma.transaction.create({
     data: {
       familyId,
@@ -120,7 +131,7 @@ export async function createTransaction(familyId: string, userId: string, input:
       amount: input.amount,
       type: input.type,
       date: new Date(input.date),
-      categoryId: input.categoryId || null,
+      categoryId,
       createdById: userId,
     },
   });
@@ -138,6 +149,8 @@ export async function createBill(familyId: string, input: CreateBillInput) {
 }
 
 export async function updateTransaction(familyId: string, transactionId: string, input: CreateTransactionInput) {
+  const categoryId = input.categoryId || null;
+  await assertCategoryInFamily(familyId, categoryId);
   const result = await prisma.transaction.updateMany({
     where: { id: transactionId, familyId },
     data: {
@@ -145,7 +158,7 @@ export async function updateTransaction(familyId: string, transactionId: string,
       amount: input.amount,
       type: input.type,
       date: new Date(input.date),
-      categoryId: input.categoryId || null,
+      categoryId,
     },
   });
   if (result.count === 0) throw new Error("Transação não encontrada.");

@@ -12,11 +12,10 @@ model User {
   members       Member[]
   invitations   Invitation[]
 
-  transactionsCreated   Transaction[]          @relation("TransactionCreatedBy")
-  contributionsCreated  Contribution[]         @relation("ContributionCreatedBy")
-  tasksAssigned         Task[]                 @relation("TaskAssignedTo")
-  devotionalCompletions DevotionalCompletion[] @relation("DevotionalCompletionUser")
-  prayerRequests        PrayerRequest[]        @relation("PrayerRequestAuthor")
+  transactionsCreated  Transaction[]  @relation("TransactionCreatedBy")
+  contributionsCreated Contribution[] @relation("ContributionCreatedBy")
+  tasksAssigned        Task[]         @relation("TaskAssignedTo")
+  prayerRequests       PrayerRequest[] @relation("PrayerRequestAuthor")
   gratitudeEntries      GratitudeEntry[]       @relation("GratitudeEntryAuthor")
 
   @@unique([email])
@@ -91,7 +90,6 @@ model Organization {
   tasks            Task[]
   maintenanceItems MaintenanceItem[]
   calendarEvents   CalendarEvent[]
-  familyDevotional FamilyDevotional?
   prayerRequests   PrayerRequest[]
   gratitudeEntries GratitudeEntry[]
 
@@ -108,9 +106,19 @@ model Member {
   role           String       @default("member")
   createdAt      DateTime
 
+  @@unique([organizationId, userId])
   @@index([organizationId])
   @@index([userId])
   @@map("member")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
 }
 
 model Invitation {

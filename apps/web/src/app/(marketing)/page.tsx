@@ -13,7 +13,7 @@ const features = [
   },
   {
     title: "Vida de fé",
-    text: "Devocional em família, mural de oração e um diário de gratidão para caminharem juntos.",
+    text: "Versículo do dia, mural de oração e um diário de gratidão para caminharem juntos.",
   },
   {
     title: "Um espaço só da sua casa",

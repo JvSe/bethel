@@ -1,12 +1,13 @@
 "use client";
 
 import { authClient } from "@bethel/auth/client";
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { buttonStyle, footerTextStyle, linkStyle, subtitleStyle, titleStyle } from "../form-styles";
 
-type Status = "checking" | "accepting" | "success" | "error" | "no-session" | "invalid";
+type Status = "checking" | "accepting" | "success" | "error" | "no-session" | "invalid" | "unverified";
 
 function AceitarConviteContent() {
   const router = useRouter();
@@ -27,6 +28,10 @@ function AceitarConviteContent() {
       setStatus("no-session");
       return;
     }
+    if (!session.user.emailVerified) {
+      setStatus("unverified");
+      return;
+    }
     if (attempted.current) return;
     attempted.current = true;
     setStatus("accepting");
@@ -37,7 +42,9 @@ function AceitarConviteContent() {
         setErrorMessage(
           error.code === "YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION"
             ? "Este convite foi enviado para outro e-mail. Entre com o e-mail que recebeu o convite."
-            : "Este convite não é mais válido — ele pode ter expirado ou já ter sido usado.",
+            : error.code === "EMAIL_NOT_VERIFIED"
+              ? "Confirme seu e-mail antes de aceitar o convite."
+              : "Este convite não é mais válido — ele pode ter expirado ou já ter sido usado.",
         );
         return;
       }
@@ -75,6 +82,21 @@ function AceitarConviteContent() {
             Cadastre-se
           </Link>
         </p>
+      </>
+    );
+  }
+
+  if (status === "unverified") {
+    return (
+      <>
+        <h1 style={titleStyle}>Confirme seu e-mail</h1>
+        <p style={subtitleStyle}>Você precisa confirmar o e-mail do convite antes de entrar na família.</p>
+        <Link
+          href={`/verificar-email?convite=${invitationId}` as Route}
+          style={{ ...buttonStyle, display: "block", textAlign: "center", textDecoration: "none" }}
+        >
+          Ir para confirmação
+        </Link>
       </>
     );
   }

@@ -9,6 +9,7 @@ const PUBLIC_PREFIXES = [
   "/termos",
   "/esqueci-senha",
   "/redefinir-senha",
+  "/verificar-email",
 ];
 
 function isPublicPath(pathname: string) {

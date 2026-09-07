@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@bethel/env": "workspace:*",
-    "@expo/vector-icons": "^15.1.1",
     "babel-preset-expo": "~56.0.0",
     "dotenv": "catalog:",
     "expo": "~56.0.3",
@@ -36,9 +35,11 @@
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
     "react-native-unistyles": "^3.2.4",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.8.3",
+    "reicon-react-native": "^1.0.103",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireFamilySession } from "@/server/auth";
+import { requireFamilyAction } from "@/server/auth";
 import { addPantryItemToShopping } from "@/server/data/compras";
 import { createPantryItem, deletePantryItem, updatePantryItem } from "@/server/data/despensa";
+import { entityIdSchema } from "@/server/validators/common";
 import { createPantryItemSchema, updatePantryItemSchema } from "@/server/validators/despensa";
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -14,22 +15,25 @@ export async function createPantryItemAction(input: unknown): Promise<ActionResu
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
-  await createPantryItem(familyId, parsed.data);
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
+  await createPantryItem(authz.session.familyId, parsed.data);
   revalidatePath("/despensa");
   revalidatePath("/inicio");
   return { success: true };
 }
 
 export async function updatePantryItemAction(itemId: string, input: unknown): Promise<ActionResult> {
+  const id = entityIdSchema.safeParse(itemId);
   const parsed = updatePantryItemSchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (!id.success || !parsed.success) {
+    return { success: false, error: parsed.error?.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await updatePantryItem(familyId, itemId, parsed.data);
+    await updatePantryItem(authz.session.familyId, id.data, parsed.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao atualizar item." };
   }
@@ -39,9 +43,13 @@ export async function updatePantryItemAction(itemId: string, input: unknown): Pr
 }
 
 export async function deletePantryItemAction(itemId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(itemId);
+  if (!id.success) return { success: false, error: "Item inválido." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await deletePantryItem(familyId, itemId);
+    await deletePantryItem(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar item." };
   }
@@ -51,14 +59,16 @@ export async function deletePantryItemAction(itemId: string): Promise<ActionResu
 }
 
 export async function addPantryToShoppingAction(pantryItemId: string): Promise<ActionResult> {
-  if (!pantryItemId.trim()) {
+  const id = entityIdSchema.safeParse(pantryItemId);
+  if (!id.success) {
     return { success: false, error: "Item inválido." };
   }
 
-  const { familyId } = await requireFamilySession();
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
 
   try {
-    await addPantryItemToShopping(familyId, pantryItemId);
+    await addPantryItemToShopping(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao adicionar à lista." };
   }

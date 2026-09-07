@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { longTextSchema } from "./common";
 
 export const createPrayerRequestSchema = z.object({
-  text: z.string().trim().min(1, "Escreva o pedido de oração."),
+  text: longTextSchema("Escreva o pedido de oração."),
 });
 
 export type CreatePrayerRequestInput = z.infer<typeof createPrayerRequestSchema>;
+
+export const prayerStatusSchema = z.enum(["PRAYING", "ANSWERED"]);

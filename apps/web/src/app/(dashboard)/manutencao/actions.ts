@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireFamilySession } from "@/server/auth";
+import { requireFamilyAction } from "@/server/auth";
 import { createMaintenanceItem, deleteMaintenanceItem, markMaintenanceDone } from "@/server/data/manutencao";
+import { entityIdSchema } from "@/server/validators/common";
 import { createMaintenanceItemSchema } from "@/server/validators/manutencao";
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -18,16 +19,21 @@ export async function createMaintenanceItemAction(input: unknown): Promise<Actio
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { familyId } = await requireFamilySession();
-  await createMaintenanceItem(familyId, parsed.data);
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
+  await createMaintenanceItem(authz.session.familyId, parsed.data);
   revalidateManutencao();
   return { success: true };
 }
 
 export async function markMaintenanceDoneAction(itemId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(itemId);
+  if (!id.success) return { success: false, error: "Item inválido." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await markMaintenanceDone(familyId, itemId);
+    await markMaintenanceDone(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao marcar como feito." };
   }
@@ -36,9 +42,13 @@ export async function markMaintenanceDoneAction(itemId: string): Promise<ActionR
 }
 
 export async function deleteMaintenanceItemAction(itemId: string): Promise<ActionResult> {
-  const { familyId } = await requireFamilySession();
+  const id = entityIdSchema.safeParse(itemId);
+  if (!id.success) return { success: false, error: "Item inválido." };
+
+  const authz = await requireFamilyAction();
+  if (!authz.success) return authz;
   try {
-    await deleteMaintenanceItem(familyId, itemId);
+    await deleteMaintenanceItem(authz.session.familyId, id.data);
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar manutenção." };
   }

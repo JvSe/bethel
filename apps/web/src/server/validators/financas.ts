@@ -1,34 +1,35 @@
 import { z } from "zod";
+import { isoDateSchema, moneySchema, shortTextSchema } from "./common";
 
 export const createTransactionSchema = z.object({
-  description: z.string().trim().min(1, "Informe a descrição."),
-  amount: z.coerce.number({ error: "Informe um valor." }).positive("Informe um valor maior que zero."),
+  description: shortTextSchema("Informe a descrição."),
+  amount: moneySchema,
   type: z.enum(["INCOME", "EXPENSE"]),
-  date: z.string().min(1, "Informe a data."),
-  categoryId: z.string().optional(),
+  date: isoDateSchema,
+  categoryId: z.string().trim().max(64).optional(),
 });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
 export const createBillSchema = z.object({
-  name: z.string().trim().min(1, "Informe o nome da conta."),
-  amount: z.coerce.number({ error: "Informe um valor." }).positive("Informe um valor maior que zero."),
-  dueDate: z.string().min(1, "Informe o vencimento."),
+  name: shortTextSchema("Informe o nome da conta."),
+  amount: moneySchema,
+  dueDate: isoDateSchema,
 });
 
 export type CreateBillInput = z.infer<typeof createBillSchema>;
 
 export const createContributionSchema = z.object({
   type: z.enum(["TITHE", "OFFERING", "MISSIONS"]),
-  amount: z.coerce.number({ error: "Informe um valor." }).positive("Informe um valor maior que zero."),
-  date: z.string().min(1, "Informe a data."),
+  amount: moneySchema,
+  date: isoDateSchema,
 });
 
 export type CreateContributionInput = z.infer<typeof createContributionSchema>;
 
 export const createBudgetCategorySchema = z.object({
-  name: z.string().trim().min(1, "Informe o nome da categoria."),
-  monthlyLimit: z.coerce.number({ error: "Informe um valor." }).positive("Informe um valor maior que zero."),
+  name: shortTextSchema("Informe o nome da categoria."),
+  monthlyLimit: moneySchema,
 });
 
 export type CreateBudgetCategoryInput = z.infer<typeof createBudgetCategorySchema>;

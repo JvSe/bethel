@@ -1,5 +1,6 @@
 "use client";
 
+import { Book } from "reicon-react";
 import Link from "next/link";
 import { updateTaskStatusAction } from "@/app/(dashboard)/tarefas/actions";
 import TopBar from "@/components/top-bar";
@@ -59,12 +60,10 @@ interface MaintenanceItem {
   nextDueAt: Date;
 }
 
-interface DevotionalOverview {
-  planTitle: string;
-  currentDay: number;
-  total: number;
-  progressPct: number;
-  todayReference: string | null;
+interface DailyVerse {
+  reference: string;
+  text: string;
+  versionLabel: string;
 }
 
 interface HomeOverview {
@@ -78,7 +77,7 @@ interface HomeOverview {
   doneTasksCount: number;
   budget: BudgetCategory[];
   upcomingBills: Bill[];
-  devotional: DevotionalOverview | null;
+  dailyVerse: DailyVerse | null;
   todayTasks: Task[];
   lowPantryItems: PantryItem[];
   upcomingMaintenance: MaintenanceItem[];
@@ -172,8 +171,8 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
     <>
       <TopBar title={`${greetingForHour(now.getHours())}, ${name}`} subtitle={formatLongDate(now)} />
       <div className="ds-page" style={{ padding: "26px 36px 56px" }}>
-        {/* Devocional do dia */}
-        {overview.devotional && (
+        {/* Versículo do dia */}
+        {overview.dailyVerse && (
           <div
             style={{
               display: "flex",
@@ -195,20 +194,27 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
-              <BookIcon />
+              <Book size={22} />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "#c79a3e" }}>
-                Leitura de hoje
+                Versículo do dia
               </div>
               <div
                 style={{
                   fontFamily: "var(--font-bricolage), sans-serif",
                   fontWeight: 600, fontSize: 16.5, letterSpacing: "-0.01em",
                   marginTop: 5, lineHeight: 1.45, color: "var(--ds-text)",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
                 }}
               >
-                {overview.devotional.todayReference ?? overview.devotional.planTitle}
+                {overview.dailyVerse.text}
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ds-muted)", marginTop: 4 }}>
+                {overview.dailyVerse.reference} · {overview.dailyVerse.versionLabel}
               </div>
             </div>
             <Link
@@ -326,16 +332,16 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
 
           {/* Right */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Devocional */}
-            {overview.devotional && (
+            {/* Versículo do dia */}
+            {overview.dailyVerse && (
               <Card style={{ padding: "20px 22px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: "var(--ds-text)" }}>Devocional em família</h3>
+                  <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: "var(--ds-text)" }}>Versículo do dia</h3>
                   <Link href="/devocional" style={{ fontSize: 12.5, fontWeight: 600, color: "#c79a3e", textDecoration: "none" }}>
                     Abrir
                   </Link>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 13 }}>
                   <div
                     style={{
                       width: 42, height: 42, flexShrink: 0, borderRadius: 11,
@@ -343,18 +349,27 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}
                   >
-                    <BookIcon size={20} />
+                    <Book size={20} />
                   </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ds-text)" }}>{overview.devotional.planTitle}</div>
-                    <div style={{ fontSize: 12, color: "var(--ds-muted)", marginTop: 2 }}>
-                      Dia {overview.devotional.currentDay} de {overview.devotional.total}
-                      {overview.devotional.todayReference ? ` · ${overview.devotional.todayReference}` : ""}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ds-text)", lineHeight: 1.45 }}>
+                      {overview.dailyVerse.reference}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: "var(--ds-muted)",
+                        marginTop: 4,
+                        lineHeight: 1.5,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {overview.dailyVerse.text}
                     </div>
                   </div>
-                </div>
-                <div style={{ height: 8, background: "var(--ds-track)", borderRadius: 20, overflow: "hidden", marginTop: 15 }}>
-                  <div style={{ height: "100%", borderRadius: 20, background: "#c79a3e", width: `${overview.devotional.progressPct}%` }} />
                 </div>
               </Card>
             )}
@@ -461,14 +476,5 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
         </div>
       </div>
     </>
-  );
-}
-
-function BookIcon({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 5 H10 A2 2 0 0 1 12 7 V20 A2 2 0 0 0 10 18 H4 Z" />
-      <path d="M20 5 H14 A2 2 0 0 0 12 7 V20 A2 2 0 0 1 14 18 H20 Z" />
-    </svg>
   );
 }

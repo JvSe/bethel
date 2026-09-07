@@ -1,10 +1,22 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import type { ComponentType } from "react";
+import type { ColorValue } from "react-native";
+import type { IconProps } from "reicon-react-native/createIcon";
 
-type FontAwesomeProps = React.ComponentProps<typeof FontAwesome>;
-
-export const TabBarIcon = (props: {
-  name: FontAwesomeProps["name"];
-  color: FontAwesomeProps["color"];
+export const TabBarIcon = ({
+  icon: Icon,
+  color,
+  focused = false,
+}: {
+  icon: ComponentType<IconProps>;
+  color: ColorValue;
+  focused?: boolean;
 }) => {
-  return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
+  return (
+    <Icon
+      size={24}
+      color={typeof color === "string" ? color : undefined}
+      weight={focused ? "Filled" : "Outline"}
+      style={{ marginBottom: -3 }}
+    />
+  );
 };

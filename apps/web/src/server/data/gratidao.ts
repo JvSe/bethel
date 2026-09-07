@@ -28,9 +28,15 @@ export async function createGratitudeEntry(familyId: string, userId: string, inp
   });
 }
 
-export async function deleteGratitudeEntry(familyId: string, entryId: string) {
+export async function deleteGratitudeEntry(
+  familyId: string,
+  entryId: string,
+  actor: { userId: string; isOwner: boolean },
+) {
   const result = await prisma.gratitudeEntry.deleteMany({
-    where: { id: entryId, familyId },
+    where: actor.isOwner
+      ? { id: entryId, familyId }
+      : { id: entryId, familyId, authorId: actor.userId },
   });
   if (result.count === 0) throw new Error("Gratidão não encontrada.");
 }
