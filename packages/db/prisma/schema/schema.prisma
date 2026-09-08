@@ -2,6 +2,9 @@ generator client {
   provider     = "prisma-client"
   output       = "../generated"
   moduleFormat = "esm"
+  // Cloudflare bloqueia `new WebAssembly.Module()` com bytes gerados em runtime.
+  // Sem isso o login (e qualquer query) cai em 500 no Worker.
+  runtime      = "cloudflare"
 }
 
 datasource db {

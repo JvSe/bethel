@@ -10,7 +10,7 @@ enum ContributionType {
 }
 
 model BudgetCategory {
-  id           String       @id @default(cuid())
+  id           String       @id @default(uuid())
   familyId     String
   family       Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   name         String
@@ -25,7 +25,7 @@ model BudgetCategory {
 }
 
 model Transaction {
-  id          String          @id @default(cuid())
+  id          String          @id @default(uuid())
   familyId    String
   family      Organization    @relation(fields: [familyId], references: [id], onDelete: Cascade)
   description String
@@ -45,7 +45,7 @@ model Transaction {
 }
 
 model Contribution {
-  id          String           @id @default(cuid())
+  id          String           @id @default(uuid())
   familyId    String
   family      Organization     @relation(fields: [familyId], references: [id], onDelete: Cascade)
   type        ContributionType
@@ -61,7 +61,7 @@ model Contribution {
 }
 
 model Bill {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
   familyId  String
   family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   name      String

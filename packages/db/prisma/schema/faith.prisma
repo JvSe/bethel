@@ -4,7 +4,7 @@ enum PrayerStatus {
 }
 
 model PrayerRequest {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
   familyId  String
   family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   text      String
@@ -19,7 +19,7 @@ model PrayerRequest {
 }
 
 model GratitudeEntry {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
   familyId  String
   family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   text      String

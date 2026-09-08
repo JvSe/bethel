@@ -1,5 +1,5 @@
 model CalendarEvent {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
   familyId  String
   family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   title     String

@@ -54,6 +54,9 @@ export const auth = betterAuth({
     ipAddress: {
       ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
     },
+    database: {
+      generateId: () => crypto.randomUUID(),
+    },
   },
   rateLimit: {
     enabled: true,

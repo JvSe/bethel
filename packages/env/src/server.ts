@@ -11,6 +11,10 @@ const BUILD_FALLBACKS = {
   EMAIL_FROM: "Bethel <build@bethel.build>",
 } as const;
 
+function withoutTrailingSlash(value: string | undefined) {
+  return value?.replace(/\/+$/, "") || value;
+}
+
 function createServerEnv() {
   const isProd = process.env.NODE_ENV === "production";
   const isNextBuild = process.env.NEXT_PHASE === "phase-production-build";
@@ -33,10 +37,10 @@ function createServerEnv() {
     runtimeEnv: {
       DATABASE_URL: buildOrReal("DATABASE_URL"),
       DIRECT_URL: process.env.DIRECT_URL,
-      CORS_ORIGIN: buildOrReal("CORS_ORIGIN"),
+      CORS_ORIGIN: withoutTrailingSlash(buildOrReal("CORS_ORIGIN")),
       NODE_ENV: process.env.NODE_ENV,
       BETTER_AUTH_SECRET: buildOrReal("BETTER_AUTH_SECRET"),
-      BETTER_AUTH_URL: buildOrReal("BETTER_AUTH_URL"),
+      BETTER_AUTH_URL: withoutTrailingSlash(buildOrReal("BETTER_AUTH_URL")),
       RESEND_API_KEY: buildOrReal("RESEND_API_KEY"),
       EMAIL_FROM: buildOrReal("EMAIL_FROM"),
     },

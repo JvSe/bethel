@@ -5,7 +5,7 @@ enum PantryLevel {
 }
 
 model PantryItem {
-  id        String       @id @default(cuid())
+  id        String       @id @default(uuid())
   familyId  String
   family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   name      String
@@ -22,7 +22,7 @@ model PantryItem {
 }
 
 model ShoppingItem {
-  id                 String       @id @default(cuid())
+  id                 String       @id @default(uuid())
   familyId           String
   family             Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   name               String
