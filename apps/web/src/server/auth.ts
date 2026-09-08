@@ -18,22 +18,31 @@ export type FamilySession = {
   isOwner: boolean;
 };
 
+async function findMembership(userId: string, preferredOrgId?: string | null) {
+  if (preferredOrgId) {
+    const preferred = await prisma.member.findFirst({
+      where: { userId, organizationId: preferredOrgId },
+    });
+    if (preferred) return preferred;
+  }
+
+  return prisma.member.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 export async function requireFamilySession(): Promise<FamilySession> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
-  const familyId = session.session.activeOrganizationId;
-  if (!familyId) redirect("/onboarding");
-
-  const member = await prisma.member.findFirst({
-    where: { userId: session.user.id, organizationId: familyId },
-  });
+  const member = await findMembership(session.user.id, session.session.activeOrganizationId);
   if (!member) redirect("/onboarding");
 
   return {
     userId: session.user.id,
     user: session.user,
-    familyId,
+    familyId: member.organizationId,
     role: member.role,
     isOwner: member.role === "owner",
   };
@@ -47,4 +56,14 @@ export async function requireFamilyAction(): Promise<
     return { success: false, error: "Muitas tentativas. Espere um minuto e tente de novo." };
   }
   return { success: true, session };
+}
+
+export async function requireOnboardingSession() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
+
+  const member = await findMembership(session.user.id, session.session.activeOrganizationId);
+  if (member) redirect("/inicio");
+
+  return session;
 }

@@ -1,9 +1,12 @@
 import { env } from "@bethel/env/server";
 import prisma from "@bethel/db";
 import { APIError, betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
 import { clipText, escapeHtml } from "./html";
+import { isPasswordStrong, PASSWORD_WEAK_MESSAGE } from "./password";
+import { digitsOnly, isValidPhone } from "./phone";
 
 const AVATAR_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
@@ -50,6 +53,33 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      const body = ctx.body as Record<string, unknown> | undefined;
+      const password =
+        typeof body?.password === "string"
+          ? body.password
+          : typeof body?.newPassword === "string"
+            ? body.newPassword
+            : undefined;
+      if (
+        password !== undefined &&
+        (ctx.path === "/sign-up/email" ||
+          ctx.path === "/reset-password" ||
+          ctx.path === "/change-password") &&
+        !isPasswordStrong(password)
+      ) {
+        throw new APIError("BAD_REQUEST", { message: PASSWORD_WEAK_MESSAGE });
+      }
+
+      if (ctx.path === "/sign-up/email") {
+        const phone = typeof body?.phone === "string" ? body.phone : "";
+        if (!isValidPhone(phone)) {
+          throw new APIError("BAD_REQUEST", { message: "Informe um telefone válido." });
+        }
+      }
+    }),
+  },
   advanced: {
     ipAddress: {
       ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
@@ -117,6 +147,11 @@ export const auth = betterAuth({
         required: false,
         input: true,
       },
+      phone: {
+        type: "string",
+        required: true,
+        input: true,
+      },
     },
   },
   databaseHooks: {
@@ -124,12 +159,13 @@ export const auth = betterAuth({
       create: {
         async before(user) {
           const name = typeof user.name === "string" ? clipText(user.name, 80) : user.name;
-          const extra = user as typeof user & { avatarColor?: unknown };
+          const extra = user as typeof user & { avatarColor?: unknown; phone?: unknown };
           const avatarColor =
             typeof extra.avatarColor === "string" && AVATAR_COLOR.test(extra.avatarColor)
               ? extra.avatarColor
               : "#9a958b";
-          return { data: { ...user, name, avatarColor } };
+          const phone = typeof extra.phone === "string" ? digitsOnly(extra.phone) : extra.phone;
+          return { data: { ...user, name, avatarColor, phone } };
         },
       },
     },

@@ -32,7 +32,7 @@ function weekDateAt(daysFromMonday: number, hours: number, minutes: number) {
   return date;
 }
 
-async function createSeedUser(params: { name: string; email: string; avatarColor: string }) {
+async function createSeedUser(params: { name: string; email: string; avatarColor: string; phone: string }) {
   const password = await hashPassword(SEED_PASSWORD);
   const user = await prisma.user.create({
     data: {
@@ -41,6 +41,7 @@ async function createSeedUser(params: { name: string; email: string; avatarColor
       email: params.email,
       emailVerified: true,
       avatarColor: params.avatarColor,
+      phone: params.phone,
       accounts: {
         create: {
           id: randomUUID(),
@@ -80,16 +81,19 @@ async function main() {
     name: "João Vitor Nunes",
     email: "joaovitor@familianunes.dev",
     avatarColor: "#5878a8",
+    phone: "11987654321",
   });
   const sn = await createSeedUser({
     name: "Sara Nunes",
     email: "sara@familianunes.dev",
     avatarColor: "#c0764f",
+    phone: "11976543210",
   });
   const en = await createSeedUser({
     name: "Eliza Nunes",
     email: "eliza@familianunes.dev",
     avatarColor: "#c79a3e",
+    phone: "11965432109",
   });
 
   const family = await prisma.organization.create({

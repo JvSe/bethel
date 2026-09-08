@@ -50,6 +50,18 @@ export const buttonStyle: CSSProperties = {
   boxShadow: "0 2px 8px rgba(0,0,0,.08)",
 };
 
+export const secondaryButtonStyle: CSSProperties = {
+  width: "100%",
+  background: "transparent",
+  color: "var(--ds-text)",
+  border: "1px solid var(--ds-border)",
+  borderRadius: 10,
+  padding: "11px 16px",
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
 export const footerTextStyle: CSSProperties = {
   marginTop: 18,
   fontSize: 13,

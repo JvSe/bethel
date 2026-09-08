@@ -25,11 +25,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (sessionCookie && pathname === "/") {
-    return NextResponse.redirect(new URL("/inicio", request.url));
-  }
+  // Cookie presence is not a valid session. Do not send /login or /registro
+  // to /inicio here — an expired cookie would loop: /login → /inicio → /login.
 
-  if (sessionCookie && (pathname === "/login" || pathname === "/registro")) {
+  if (sessionCookie && pathname === "/") {
     return NextResponse.redirect(new URL("/inicio", request.url));
   }
 

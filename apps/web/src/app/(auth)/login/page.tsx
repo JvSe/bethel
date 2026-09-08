@@ -3,7 +3,7 @@
 import { authClient } from "@bethel/auth/client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   buttonStyle,
   fieldStyle,
@@ -15,7 +15,11 @@ import {
   titleStyle,
 } from "../form-styles";
 
-function loginErrorMessage(error: { code?: string | undefined; status?: number; message?: string }) {
+function loginErrorMessage(error: {
+  code?: string | undefined;
+  status?: number;
+  message?: string;
+}) {
   if (error.code === "EMAIL_NOT_VERIFIED") {
     return "Confirme seu e-mail para entrar. Olhe a caixa de entrada e o spam.";
   }
@@ -37,6 +41,22 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (isPending || !session) return;
+    if (convite) {
+      router.replace(`/aceitar-convite?id=${convite}`);
+      return;
+    }
+    void authClient.organization.list().then(({ data }) => {
+      if (!data) {
+        router.replace("/inicio");
+        return;
+      }
+      router.replace(data.length > 0 ? "/inicio" : "/onboarding");
+    });
+  }, [session, isPending, convite, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,19 +71,21 @@ function LoginForm() {
       return;
     }
 
-    // A new session always starts without an active organization — if the
-    // user already belongs to one (the common case), select it here so the
-    // dashboard layout doesn't bounce them to /onboarding.
-    if (!convite) {
-      const { data: organizations } = await authClient.organization.list();
-      if (organizations && organizations.length > 0) {
-        await authClient.organization.setActive({
-          organizationId: organizations[0].id,
-        });
-      }
+    if (convite) {
+      router.push(`/aceitar-convite?id=${convite}`);
+      router.refresh();
+      return;
     }
 
-    router.push(convite ? `/aceitar-convite?id=${convite}` : "/inicio");
+    const { data: organizations } = await authClient.organization.list();
+    if (organizations && organizations.length > 0) {
+      await authClient.organization.setActive({
+        organizationId: organizations[0].id,
+      });
+      router.push("/inicio");
+    } else {
+      router.push("/onboarding");
+    }
     router.refresh();
   }
 
@@ -81,7 +103,7 @@ function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            // placeholder="exemplo@email.com"
+            placeholder="exemplo@email.com"
             style={inputStyle}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -95,7 +117,7 @@ function LoginForm() {
             id="password"
             type="password"
             required
-            // placeholder="********"
+            placeholder="********"
             autoComplete="current-password"
             style={inputStyle}
             value={password}

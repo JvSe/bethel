@@ -2,7 +2,8 @@
 
 import { authClient } from "@bethel/auth/client";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDashboard } from "@/contexts/dashboard-context";
 import { initials } from "@/lib/format";
 import { inviteMemberAction } from "@/server/invite-actions";
@@ -34,7 +35,10 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
   const router = useRouter();
   const { accent, setAccent } = useDashboard();
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -43,15 +47,74 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
+  useLayoutEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return;
+    }
+
+    function place() {
+      const trigger = triggerRef.current;
+      const panel = panelRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const margin = 8;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const width = Math.min(280, vw - margin * 2);
+      const contentHeight = panel?.scrollHeight ?? 320;
+      const height = Math.min(contentHeight, vh - margin * 2);
+
+      let left = rect.left;
+      if (left + width > vw - margin) {
+        left = vw - width - margin;
+      }
+      left = Math.max(margin, left);
+
+      let top = rect.top - margin - height;
+      if (top < margin) top = margin;
+
+      const next = { top, left, width, maxHeight: Math.min(height, vh - top - margin) };
+      setCoords((prev) =>
+        prev &&
+        prev.top === next.top &&
+        prev.left === next.left &&
+        prev.width === next.width &&
+        prev.maxHeight === next.maxHeight
+          ? prev
+          : next,
+      );
+    }
+
+    place();
+    const observer = panelRef.current ? new ResizeObserver(place) : null;
+    if (panelRef.current) observer?.observe(panelRef.current);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, inviteLink, members.length, inviteError, removeError]);
+
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [open]);
 
   async function handleInvite(e: React.FormEvent) {
@@ -96,7 +159,7 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
       setRemoveError(error.message ?? "Não foi possível encerrar o espaço.");
       return;
     }
-    router.push("/");
+    router.push("/onboarding");
     router.refresh();
   }
 
@@ -131,6 +194,7 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
   return (
     <div ref={rootRef} style={{ position: "relative" }}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         style={{
           display: "flex",
@@ -187,21 +251,26 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
         </div>
       </button>
 
-      {open && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "calc(100% + 8px)",
-            left: 0,
-            width: 280,
-            background: "var(--ds-surface)",
-            border: "1px solid var(--ds-border)",
-            borderRadius: 14,
-            padding: 14,
-            boxShadow: "0 8px 28px rgba(0,0,0,.12)",
-            zIndex: 20,
-          }}
-        >
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{
+              position: "fixed",
+              top: coords?.top ?? 0,
+              left: coords?.left ?? 0,
+              width: coords?.width ?? 280,
+              maxHeight: coords?.maxHeight ?? "min(70vh, 520px)",
+              overflowY: "auto",
+              visibility: coords ? "visible" : "hidden",
+              background: "var(--ds-surface)",
+              border: "1px solid var(--ds-border)",
+              borderRadius: 14,
+              padding: 14,
+              boxShadow: "0 8px 28px rgba(0,0,0,.12)",
+              zIndex: 60,
+            }}
+          >
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "var(--ds-muted)", textTransform: "uppercase", marginBottom: 8 }}>
             Membros
           </div>
@@ -416,8 +485,9 @@ export default function FamilyPopover({ familyId, familyName, members, isOwner, 
           >
             Sair da conta
           </button>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -1,9 +1,6 @@
-import { auth } from "@bethel/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireOnboardingSession } from "@/server/auth";
 
 export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login");
+  await requireOnboardingSession();
   return children;
 }

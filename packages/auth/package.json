@@ -5,7 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./password": "./src/password.ts",
+    "./phone": "./src/phone.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

@@ -1,10 +1,12 @@
 "use client";
 
 import { authClient } from "@bethel/auth/client";
+import { isPasswordStrong } from "@bethel/auth/password";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { buttonStyle, fieldStyle, footerTextStyle, inputStyle, labelStyle, linkStyle, subtitleStyle, titleStyle } from "../form-styles";
+import { PasswordRules } from "../password-rules";
 
 function RedefinirSenhaForm() {
   const router = useRouter();
@@ -21,6 +23,10 @@ function RedefinirSenhaForm() {
     if (!token) return;
     if (password !== confirm) {
       setError("As senhas não conferem.");
+      return;
+    }
+    if (!isPasswordStrong(password)) {
+      setError("A senha precisa ter letra, número e símbolo, com pelo menos 8 caracteres.");
       return;
     }
 
@@ -59,7 +65,7 @@ function RedefinirSenhaForm() {
   return (
     <>
       <h1 style={titleStyle}>Nova senha</h1>
-      <p style={subtitleStyle}>Escolha uma senha com pelo menos 8 caracteres.</p>
+      <p style={subtitleStyle}>Escolha uma senha com letra, número e símbolo.</p>
       <form onSubmit={handleSubmit}>
         <div style={fieldStyle}>
           <label style={labelStyle} htmlFor="password">
@@ -76,6 +82,7 @@ function RedefinirSenhaForm() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+        <PasswordRules password={password} />
         <div style={fieldStyle}>
           <label style={labelStyle} htmlFor="confirm">
             Confirmar senha
@@ -90,6 +97,9 @@ function RedefinirSenhaForm() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
           />
+          {confirm.length > 0 && password !== confirm && (
+            <p style={{ color: "#b3452c", fontSize: 12, margin: "6px 0 0" }}>As senhas não conferem.</p>
+          )}
         </div>
         {error && <p style={{ color: "#b3452c", fontSize: 13, marginBottom: 14 }}>{error}</p>}
         <button type="submit" style={buttonStyle} disabled={loading}>
