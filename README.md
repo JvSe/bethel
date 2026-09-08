@@ -57,6 +57,8 @@ Depois do primeiro deploy, o Cloudflare mostra o endereço (algo como `https://b
 
 O `next build` não precisa das variáveis para *compilar*, mas o site **não funciona** sem elas em runtime. Cadastre-as em **Settings → Variables and Secrets** do Worker (não só nas variáveis de *build*). Depois de cada deploy, confira se ainda estão lá.
 
+`BETTER_AUTH_URL` e `CORS_ORIGIN` não podem ter barra no final (`https://bethel.<sua-conta>.workers.dev`, nunca com `/` depois).
+
 Os logs do Worker ficam em **Workers & Pages → bethel → Observability**. Eles só aparecem no painel se `observability.logs.persist` estiver `true` no `wrangler.jsonc` (e depois de um deploy novo).
 
 Aplique as tabelas no Neon uma vez:

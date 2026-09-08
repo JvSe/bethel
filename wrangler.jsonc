@@ -7,6 +7,10 @@
     "enabled": true
   },
   "keep_vars": true,
+  "find_additional_modules": true,
+  "rules": [
+    { "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": true }
+  ],
   "assets": {
     "directory": "apps/web/.open-next/assets",
     "binding": "ASSETS"
