@@ -8,33 +8,38 @@ import { clipText, escapeHtml } from "./html";
 const AVATAR_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
 async function sendMail(params: { to: string; subject: string; html: string }) {
-  if (!env.RESEND_API_KEY) {
-    console.info(`[auth] ${params.subject} (${params.to})\n${params.html}`);
-    return;
-  }
+  try {
+    if (!env.RESEND_API_KEY) {
+      console.info(`[auth] ${params.subject} (${params.to})\n${params.html}`);
+      return;
+    }
 
-  const from = env.EMAIL_FROM;
-  if (!from) {
-    throw new Error("EMAIL_FROM não configurado.");
-  }
+    const from = env.EMAIL_FROM;
+    if (!from) {
+      console.error("[auth] EMAIL_FROM não configurado; e-mail não enviado.", params.subject, params.to);
+      return;
+    }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [params.to],
-      subject: params.subject,
-      html: params.html,
-    }),
-  });
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [params.to],
+        subject: params.subject,
+        html: params.html,
+      }),
+    });
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Falha ao enviar e-mail: ${body}`);
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("[auth] Resend recusou o e-mail", response.status, params.to, body);
+    }
+  } catch (error) {
+    console.error("[auth] falha ao enviar e-mail", params.subject, params.to, error);
   }
 }
 

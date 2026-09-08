@@ -51,7 +51,13 @@ function RegistroForm() {
 
     if (error) {
       setLoading(false);
-      setError("Não foi possível criar sua conta. Tente de novo em instantes.");
+      setError(
+        error.code === "USER_ALREADY_EXISTS"
+          ? "Já existe uma conta com este e-mail. Entre ou recupere a senha."
+          : error.status === 500 || error.message === "Erro interno ao autenticar."
+            ? "Não foi possível criar sua conta agora. Tente de novo em instantes."
+            : "Não foi possível criar sua conta. Tente de novo em instantes.",
+      );
       return;
     }
 

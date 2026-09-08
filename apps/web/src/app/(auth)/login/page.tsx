@@ -15,6 +15,19 @@ import {
   titleStyle,
 } from "../form-styles";
 
+function loginErrorMessage(error: { code?: string | undefined; status?: number; message?: string }) {
+  if (error.code === "EMAIL_NOT_VERIFIED") {
+    return "Confirme seu e-mail para entrar. Olhe a caixa de entrada e o spam.";
+  }
+  if (error.code === "TOO_MANY_REQUESTS" || error.status === 429) {
+    return "Muitas tentativas. Espere um minuto e tente de novo.";
+  }
+  if (error.status === 500 || error.message === "Erro interno ao autenticar.") {
+    return "Não foi possível entrar agora. Tente de novo em instantes.";
+  }
+  return "E-mail ou senha inválidos.";
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,11 +47,7 @@ function LoginForm() {
 
     if (error) {
       setLoading(false);
-      setError(
-        error.code === "EMAIL_NOT_VERIFIED"
-          ? "Confirme seu e-mail para entrar. Olhe a caixa de entrada e o spam."
-          : "E-mail ou senha inválidos.",
-      );
+      setError(loginErrorMessage(error));
       return;
     }
 
