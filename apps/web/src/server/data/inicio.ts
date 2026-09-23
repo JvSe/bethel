@@ -26,7 +26,12 @@ export async function getHomeOverview(familyId: string) {
   const doneTasksCount = tasks.length - openTasks.length;
 
   const unpaidBills = finance.bills.filter((bill) => !bill.paid);
-  const unpaidBillsTotal = unpaidBills.reduce((sum, bill) => sum + bill.amount, 0);
+  const unpaidBillsTotalBrl = unpaidBills
+    .filter((bill) => bill.currency === "BRL")
+    .reduce((sum, bill) => sum + bill.amount, 0);
+  const unpaidBillsTotalUsd = unpaidBills
+    .filter((bill) => bill.currency === "USD")
+    .reduce((sum, bill) => sum + bill.amount, 0);
 
   const lowPantryItems = pantryItems
     .filter((item) => item.level !== PantryLevel.OK)
@@ -35,8 +40,11 @@ export async function getHomeOverview(familyId: string) {
   return {
     familyName: organization?.name ?? "Família",
     balance: finance.balance,
+    balanceUsd: finance.byCurrency.USD.balance,
+    hasUsd: finance.accounts.some((a) => a.currency === "USD"),
     unpaidBillsCount: unpaidBills.length,
-    unpaidBillsTotal,
+    unpaidBillsTotal: unpaidBillsTotalBrl,
+    unpaidBillsTotalUsd,
     pendingShoppingCount: pendingShoppingItems.length,
     shoppingEstimatedTotal,
     openTasksCount: openTasks.length,

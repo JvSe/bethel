@@ -3,13 +3,13 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import { DashboardProvider } from "@/contexts/dashboard-context";
 import { requireFamilySession } from "@/server/auth";
-import { familyNeedsProvision, provisionNewFamily } from "@/server/data/provision";
+import { ensureFinancialAccounts, familyNeedsProvision } from "@/server/data/provision";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { userId, familyId, role } = await requireFamilySession();
 
   if (await familyNeedsProvision(familyId)) {
-    await provisionNewFamily(familyId);
+    await ensureFinancialAccounts(familyId);
   }
 
   const family = await prisma.organization.findUnique({

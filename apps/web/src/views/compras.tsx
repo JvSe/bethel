@@ -48,9 +48,9 @@ export default function ComprasView({ items }: ComprasViewProps) {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateShoppingItemInput>({
+  } = useForm({
     resolver: zodResolver(createShoppingItemSchema),
-    defaultValues: { name: "", quantity: "", category: "", estimatedPrice: undefined },
+    defaultValues: { name: "", quantity: "", category: "", estimatedPrice: undefined as number | undefined },
   });
 
   async function onSubmit(data: CreateShoppingItemInput) {

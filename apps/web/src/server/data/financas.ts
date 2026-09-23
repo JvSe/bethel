@@ -1,10 +1,14 @@
-import prisma, { ContributionType, TransactionType } from "@bethel/db";
+import prisma, { ContributionType, Currency, IncomeCategory, TransactionType } from "@bethel/db";
 import { budgetProgress, titheGoalProgress } from "@/lib/calc";
+import { ensureFamilyFinanceDefaults } from "@/server/data/provision";
 import type {
   CreateBillInput,
   CreateBudgetCategoryInput,
   CreateContributionInput,
+  CreateFinancialAccountInput,
+  CreateRecurringIncomeInput,
   CreateTransactionInput,
+  UpdateRecurringIncomeInput,
 } from "@/server/validators/financas";
 
 function startOfMonth() {
@@ -23,29 +27,144 @@ const CONTRIBUTION_LABELS: Record<ContributionType, string> = {
   MISSIONS: "Missões",
 };
 
+export const INCOME_CATEGORY_LABELS: Record<IncomeCategory, string> = {
+  SALARY: "Salário",
+  FREELANCE: "Freelance",
+  RENT: "Aluguel",
+  OTHER: "Outros",
+};
+
+function emptyCurrencyTotals() {
+  return {
+    BRL: { income: 0, expense: 0, balance: 0 },
+    USD: { income: 0, expense: 0, balance: 0 },
+  } as Record<Currency, { income: number; expense: number; balance: number }>;
+}
+
+async function assertAccountInFamily(familyId: string, accountId: string) {
+  const account = await prisma.financialAccount.findFirst({
+    where: { id: accountId, familyId },
+    select: { id: true, currency: true },
+  });
+  if (!account) throw new Error("Conta financeira inválida.");
+  return account;
+}
+
+async function assertCategoryInFamily(familyId: string, categoryId: string | null | undefined) {
+  if (!categoryId) return null;
+  const category = await prisma.budgetCategory.findFirst({
+    where: { id: categoryId, familyId },
+    select: { id: true, currency: true },
+  });
+  if (!category) throw new Error("Categoria inválida.");
+  return category;
+}
+
+async function ensureRecurringIncomesForMonth(familyId: string) {
+  try {
+    const monthStart = startOfMonth();
+    const monthEnd = startOfNextMonth();
+    const recurring = await prisma.recurringIncome.findMany({
+      where: { familyId, active: true },
+      include: { account: { select: { id: true } } },
+    });
+    if (recurring.length === 0) return;
+
+    const existing = await prisma.transaction.findMany({
+      where: {
+        familyId,
+        recurringIncomeId: { in: recurring.map((r) => r.id) },
+        date: { gte: monthStart, lt: monthEnd },
+      },
+      select: { recurringIncomeId: true },
+    });
+    const alreadyCreated = new Set(existing.map((t) => t.recurringIncomeId).filter(Boolean));
+
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+
+    for (const item of recurring) {
+      if (alreadyCreated.has(item.id)) continue;
+      const day = Math.min(Math.max(item.dayOfMonth, 1), 28);
+      await prisma.transaction.create({
+        data: {
+          familyId,
+          accountId: item.accountId,
+          description: item.description,
+          amount: item.amount,
+          type: TransactionType.INCOME,
+          date: new Date(year, month, day),
+          incomeCategory: item.category,
+          recurringIncomeId: item.id,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("[financas] ensureRecurringIncomesForMonth", error);
+  }
+}
+
 export async function getFinanceOverview(familyId: string) {
+  await ensureFamilyFinanceDefaults(familyId);
+  await ensureRecurringIncomesForMonth(familyId);
+
   const monthStart = startOfMonth();
   const monthEnd = startOfNextMonth();
 
-  const [categories, transactionsThisMonth, recentTransactions, contributionsThisMonth, bills] = await Promise.all([
-    prisma.budgetCategory.findMany({ where: { familyId }, orderBy: { name: "asc" } }),
-    prisma.transaction.findMany({ where: { familyId, date: { gte: monthStart, lt: monthEnd } } }),
-    prisma.transaction.findMany({
-      where: { familyId },
-      include: { category: { select: { name: true } } },
-      orderBy: { date: "desc" },
-      take: 8,
-    }),
-    prisma.contribution.findMany({ where: { familyId, date: { gte: monthStart, lt: monthEnd } } }),
-    prisma.bill.findMany({ where: { familyId }, orderBy: { dueDate: "asc" } }),
-  ]);
+  const [accounts, categories, transactionsThisMonth, recentTransactions, contributionsThisMonth, bills, recurringIncomes] =
+    await Promise.all([
+      prisma.financialAccount.findMany({ where: { familyId }, orderBy: [{ currency: "asc" }, { name: "asc" }] }),
+      prisma.budgetCategory.findMany({ where: { familyId }, orderBy: { name: "asc" } }),
+      prisma.transaction.findMany({
+        where: { familyId, date: { gte: monthStart, lt: monthEnd } },
+        include: { account: { select: { id: true, currency: true, name: true } } },
+      }),
+      prisma.transaction.findMany({
+        where: { familyId },
+        include: {
+          category: { select: { name: true } },
+          account: { select: { id: true, name: true, currency: true } },
+        },
+        orderBy: { date: "desc" },
+        take: 12,
+      }),
+      prisma.contribution.findMany({
+        where: { familyId, date: { gte: monthStart, lt: monthEnd } },
+        include: { account: { select: { id: true, name: true, currency: true } } },
+      }),
+      prisma.bill.findMany({
+        where: { familyId },
+        include: { account: { select: { id: true, name: true, currency: true } } },
+        orderBy: { dueDate: "asc" },
+      }),
+      prisma.recurringIncome.findMany({
+        where: { familyId },
+        include: { account: { select: { id: true, name: true, currency: true } } },
+        orderBy: { description: "asc" },
+      }),
+    ]);
 
-  const income = transactionsThisMonth
-    .filter((t) => t.type === TransactionType.INCOME)
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-  const expense = transactionsThisMonth
-    .filter((t) => t.type === TransactionType.EXPENSE)
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const byCurrency = emptyCurrencyTotals();
+  const accountMonth = new Map<string, { income: number; expense: number }>();
+
+  for (const t of transactionsThisMonth) {
+    if (!t.account) continue;
+    const amount = Number(t.amount);
+    const currency = t.account.currency;
+    const bucket = accountMonth.get(t.accountId) ?? { income: 0, expense: 0 };
+    if (t.type === TransactionType.INCOME) {
+      byCurrency[currency].income += amount;
+      bucket.income += amount;
+    } else {
+      byCurrency[currency].expense += amount;
+      bucket.expense += amount;
+    }
+    accountMonth.set(t.accountId, bucket);
+  }
+
+  for (const currency of Object.keys(byCurrency) as Currency[]) {
+    byCurrency[currency].balance = byCurrency[currency].income - byCurrency[currency].expense;
+  }
 
   const spentByCategory = new Map<string, number>();
   for (const t of transactionsThisMonth) {
@@ -57,19 +176,20 @@ export async function getFinanceOverview(familyId: string) {
     const spent = spentByCategory.get(c.id) ?? 0;
     const limit = Number(c.monthlyLimit);
     const { pct, over } = budgetProgress(spent, limit);
-    return { id: c.id, name: c.name, spent, limit, pct, over };
+    return { id: c.id, name: c.name, spent, limit, pct, over, currency: c.currency };
   });
 
   const contributionsByType = new Map<ContributionType, number>();
+  let contributionsTotalBrl = 0;
   for (const c of contributionsThisMonth) {
+    if (!c.account || c.account.currency !== Currency.BRL) continue;
     contributionsByType.set(c.type, (contributionsByType.get(c.type) ?? 0) + Number(c.amount));
+    contributionsTotalBrl += Number(c.amount);
   }
   const titheGiven = contributionsByType.get(ContributionType.TITHE) ?? 0;
-  const { pct: tithePct } = titheGoalProgress(titheGiven, income);
-  const contributionsTotal = contributionsThisMonth.reduce((sum, c) => sum + Number(c.amount), 0);
-
+  const { pct: tithePct } = titheGoalProgress(titheGiven, byCurrency.BRL.income);
   const dizimo = {
-    total: contributionsTotal,
+    total: contributionsTotalBrl,
     pct: tithePct,
     items: (Object.keys(CONTRIBUTION_LABELS) as ContributionType[]).map((type) => ({
       type,
@@ -79,28 +199,53 @@ export async function getFinanceOverview(familyId: string) {
   };
 
   return {
-    balance: income - expense,
-    income,
-    expense,
+    // Compat: início ainda usa saldo BRL do mês
+    balance: byCurrency.BRL.balance,
+    income: byCurrency.BRL.income,
+    expense: byCurrency.BRL.expense,
+    byCurrency,
+    accounts: accounts.map((a) => {
+      const month = accountMonth.get(a.id) ?? { income: 0, expense: 0 };
+      return {
+        id: a.id,
+        name: a.name,
+        currency: a.currency,
+        income: month.income,
+        expense: month.expense,
+        balance: month.income - month.expense,
+      };
+    }),
     budget,
     dizimo,
-    transactions: recentTransactions.map((t) => ({
-      id: t.id,
-      description: t.description,
-      amount: Number(t.amount),
-      type: t.type,
-      date: t.date,
-      categoryId: t.categoryId,
-      categoryName: t.category?.name ?? null,
-    })),
-    bills: bills.map((b) => ({
-      id: b.id,
-      name: b.name,
-      amount: Number(b.amount),
-      dueDate: b.dueDate,
-      paid: b.paid,
-    })),
+    transactions: recentTransactions
+      .filter((t) => t.account)
+      .map((t) => ({
+        id: t.id,
+        description: t.description,
+        amount: Number(t.amount),
+        type: t.type,
+        date: t.date,
+        categoryId: t.categoryId,
+        categoryName: t.category?.name ?? null,
+        incomeCategory: t.incomeCategory,
+        accountId: t.accountId,
+        accountName: t.account.name,
+        currency: t.account.currency,
+      })),
+    bills: bills
+      .filter((b) => b.account)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        amount: Number(b.amount),
+        dueDate: b.dueDate,
+        paid: b.paid,
+        accountId: b.accountId,
+        accountName: b.account.name,
+        currency: b.account.currency,
+      })),
     contributions: [...contributionsThisMonth]
+      .filter((c) => c.account)
       .sort((a, b) => b.date.getTime() - a.date.getTime())
       .map((c) => ({
         id: c.id,
@@ -108,39 +253,119 @@ export async function getFinanceOverview(familyId: string) {
         label: CONTRIBUTION_LABELS[c.type],
         amount: Number(c.amount),
         date: c.date,
+        accountId: c.accountId,
+        accountName: c.account.name,
+        currency: c.account.currency,
+      })),
+    recurringIncomes: recurringIncomes
+      .filter((r) => r.account)
+      .map((r) => ({
+        id: r.id,
+        description: r.description,
+        amount: Number(r.amount),
+        dayOfMonth: r.dayOfMonth,
+        category: r.category,
+        active: r.active,
+        accountId: r.accountId,
+        accountName: r.account.name,
+        currency: r.account.currency,
       })),
   };
 }
 
-async function assertCategoryInFamily(familyId: string, categoryId: string | null | undefined) {
-  if (!categoryId) return;
-  const category = await prisma.budgetCategory.findFirst({
-    where: { id: categoryId, familyId },
-    select: { id: true },
+export async function createFinancialAccount(familyId: string, input: CreateFinancialAccountInput) {
+  await prisma.financialAccount.create({
+    data: {
+      familyId,
+      name: input.name,
+      currency: input.currency,
+    },
   });
-  if (!category) throw new Error("Categoria inválida.");
+}
+
+export async function updateFinancialAccount(familyId: string, accountId: string, input: Pick<CreateFinancialAccountInput, "name">) {
+  const result = await prisma.financialAccount.updateMany({
+    where: { id: accountId, familyId },
+    data: { name: input.name },
+  });
+  if (result.count === 0) throw new Error("Conta financeira não encontrada.");
+}
+
+export async function deleteFinancialAccount(familyId: string, accountId: string) {
+  const [txCount, billCount, contribCount, recurringCount, accountCount] = await Promise.all([
+    prisma.transaction.count({ where: { familyId, accountId } }),
+    prisma.bill.count({ where: { familyId, accountId } }),
+    prisma.contribution.count({ where: { familyId, accountId } }),
+    prisma.recurringIncome.count({ where: { familyId, accountId } }),
+    prisma.financialAccount.count({ where: { familyId } }),
+  ]);
+  if (accountCount <= 1) throw new Error("Mantenha pelo menos uma conta financeira.");
+  if (txCount + billCount + contribCount + recurringCount > 0) {
+    throw new Error("Não é possível apagar uma conta com lançamentos vinculados.");
+  }
+  const result = await prisma.financialAccount.deleteMany({ where: { id: accountId, familyId } });
+  if (result.count === 0) throw new Error("Conta financeira não encontrada.");
 }
 
 export async function createTransaction(familyId: string, userId: string, input: CreateTransactionInput) {
-  const categoryId = input.categoryId || null;
-  await assertCategoryInFamily(familyId, categoryId);
+  const account = await assertAccountInFamily(familyId, input.accountId);
+  const categoryId = input.type === TransactionType.EXPENSE ? input.categoryId || null : null;
+  const category = await assertCategoryInFamily(familyId, categoryId);
+  if (category && category.currency !== account.currency) {
+    throw new Error("A categoria precisa ser da mesma moeda da conta.");
+  }
+
   await prisma.transaction.create({
     data: {
       familyId,
+      accountId: input.accountId,
       description: input.description,
       amount: input.amount,
       type: input.type,
       date: new Date(input.date),
       categoryId,
+      incomeCategory: input.type === TransactionType.INCOME ? (input.incomeCategory ?? IncomeCategory.OTHER) : null,
       createdById: userId,
     },
   });
 }
 
+export async function updateTransaction(familyId: string, transactionId: string, input: CreateTransactionInput) {
+  const account = await assertAccountInFamily(familyId, input.accountId);
+  const categoryId = input.type === TransactionType.EXPENSE ? input.categoryId || null : null;
+  const category = await assertCategoryInFamily(familyId, categoryId);
+  if (category && category.currency !== account.currency) {
+    throw new Error("A categoria precisa ser da mesma moeda da conta.");
+  }
+
+  const result = await prisma.transaction.updateMany({
+    where: { id: transactionId, familyId },
+    data: {
+      accountId: input.accountId,
+      description: input.description,
+      amount: input.amount,
+      type: input.type,
+      date: new Date(input.date),
+      categoryId,
+      incomeCategory: input.type === TransactionType.INCOME ? (input.incomeCategory ?? IncomeCategory.OTHER) : null,
+    },
+  });
+  if (result.count === 0) throw new Error("Transação não encontrada.");
+}
+
+export async function deleteTransaction(familyId: string, transactionId: string) {
+  const result = await prisma.transaction.deleteMany({
+    where: { id: transactionId, familyId },
+  });
+  if (result.count === 0) throw new Error("Transação não encontrada.");
+}
+
 export async function createBill(familyId: string, input: CreateBillInput) {
+  await assertAccountInFamily(familyId, input.accountId);
   await prisma.bill.create({
     data: {
       familyId,
+      accountId: input.accountId,
       name: input.name,
       amount: input.amount,
       dueDate: new Date(input.dueDate),
@@ -148,26 +373,12 @@ export async function createBill(familyId: string, input: CreateBillInput) {
   });
 }
 
-export async function updateTransaction(familyId: string, transactionId: string, input: CreateTransactionInput) {
-  const categoryId = input.categoryId || null;
-  await assertCategoryInFamily(familyId, categoryId);
-  const result = await prisma.transaction.updateMany({
-    where: { id: transactionId, familyId },
-    data: {
-      description: input.description,
-      amount: input.amount,
-      type: input.type,
-      date: new Date(input.date),
-      categoryId,
-    },
-  });
-  if (result.count === 0) throw new Error("Transação não encontrada.");
-}
-
 export async function updateBill(familyId: string, billId: string, input: CreateBillInput) {
+  await assertAccountInFamily(familyId, input.accountId);
   const result = await prisma.bill.updateMany({
     where: { id: billId, familyId },
     data: {
+      accountId: input.accountId,
       name: input.name,
       amount: input.amount,
       dueDate: new Date(input.dueDate),
@@ -191,13 +402,6 @@ export async function markBillPaid(familyId: string, billId: string) {
   await setBillPaid(familyId, billId, true);
 }
 
-export async function deleteTransaction(familyId: string, transactionId: string) {
-  const result = await prisma.transaction.deleteMany({
-    where: { id: transactionId, familyId },
-  });
-  if (result.count === 0) throw new Error("Transação não encontrada.");
-}
-
 export async function deleteBill(familyId: string, billId: string) {
   const result = await prisma.bill.deleteMany({
     where: { id: billId, familyId },
@@ -206,23 +410,15 @@ export async function deleteBill(familyId: string, billId: string) {
 }
 
 export async function createContribution(familyId: string, userId: string, input: CreateContributionInput) {
+  await assertAccountInFamily(familyId, input.accountId);
   await prisma.contribution.create({
     data: {
       familyId,
+      accountId: input.accountId,
       type: input.type,
       amount: input.amount,
       date: new Date(input.date),
       createdById: userId,
-    },
-  });
-}
-
-export async function createBudgetCategory(familyId: string, input: CreateBudgetCategoryInput) {
-  await prisma.budgetCategory.create({
-    data: {
-      familyId,
-      name: input.name,
-      monthlyLimit: input.monthlyLimit,
     },
   });
 }
@@ -234,12 +430,24 @@ export async function deleteContribution(familyId: string, contributionId: strin
   if (result.count === 0) throw new Error("Contribuição não encontrada.");
 }
 
+export async function createBudgetCategory(familyId: string, input: CreateBudgetCategoryInput) {
+  await prisma.budgetCategory.create({
+    data: {
+      familyId,
+      name: input.name,
+      monthlyLimit: input.monthlyLimit,
+      currency: input.currency,
+    },
+  });
+}
+
 export async function updateBudgetCategory(familyId: string, categoryId: string, input: CreateBudgetCategoryInput) {
   const result = await prisma.budgetCategory.updateMany({
     where: { id: categoryId, familyId },
     data: {
       name: input.name,
       monthlyLimit: input.monthlyLimit,
+      currency: input.currency,
     },
   });
   if (result.count === 0) throw new Error("Categoria não encontrada.");
@@ -250,4 +458,41 @@ export async function deleteBudgetCategory(familyId: string, categoryId: string)
     where: { id: categoryId, familyId },
   });
   if (result.count === 0) throw new Error("Categoria não encontrada.");
+}
+
+export async function createRecurringIncome(familyId: string, input: CreateRecurringIncomeInput) {
+  await assertAccountInFamily(familyId, input.accountId);
+  await prisma.recurringIncome.create({
+    data: {
+      familyId,
+      accountId: input.accountId,
+      description: input.description,
+      amount: input.amount,
+      dayOfMonth: input.dayOfMonth,
+      category: input.category,
+    },
+  });
+}
+
+export async function updateRecurringIncome(familyId: string, recurringId: string, input: UpdateRecurringIncomeInput) {
+  await assertAccountInFamily(familyId, input.accountId);
+  const result = await prisma.recurringIncome.updateMany({
+    where: { id: recurringId, familyId },
+    data: {
+      accountId: input.accountId,
+      description: input.description,
+      amount: input.amount,
+      dayOfMonth: input.dayOfMonth,
+      category: input.category,
+      ...(input.active !== undefined ? { active: input.active } : {}),
+    },
+  });
+  if (result.count === 0) throw new Error("Receita recorrente não encontrada.");
+}
+
+export async function deleteRecurringIncome(familyId: string, recurringId: string) {
+  const result = await prisma.recurringIncome.deleteMany({
+    where: { id: recurringId, familyId },
+  });
+  if (result.count === 0) throw new Error("Receita recorrente não encontrada.");
 }

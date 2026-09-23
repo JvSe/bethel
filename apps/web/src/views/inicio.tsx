@@ -31,6 +31,7 @@ interface BudgetCategory {
   limit: number;
   pct: number;
   over: boolean;
+  currency?: "BRL" | "USD";
 }
 
 interface Bill {
@@ -38,6 +39,7 @@ interface Bill {
   name: string;
   amount: number;
   dueDate: Date;
+  currency?: "BRL" | "USD";
 }
 
 interface Task {
@@ -69,8 +71,11 @@ interface DailyVerse {
 interface HomeOverview {
   familyName: string;
   balance: number;
+  balanceUsd: number;
+  hasUsd: boolean;
   unpaidBillsCount: number;
   unpaidBillsTotal: number;
+  unpaidBillsTotalUsd: number;
   pendingShoppingCount: number;
   shoppingEstimatedTotal: number;
   openTasksCount: number;
@@ -127,18 +132,24 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
   const stats = [
     {
       label: "Saldo do mês",
-      value: formatCurrency(overview.balance),
-      sub: overview.balance >= 0 ? "Saldo positivo" : "Saldo negativo",
+      value: formatCurrency(overview.balance, "BRL"),
+      sub: overview.hasUsd
+        ? formatCurrency(overview.balanceUsd, "USD")
+        : overview.balance >= 0
+          ? "Saldo positivo"
+          : "Saldo negativo",
       dot: overview.balance >= 0 ? "#4f8a6b" : "#c0764f",
       subCor: overview.balance >= 0 ? "#4f8a6b" : "#c0764f",
     },
     {
       label: "Contas a pagar",
-      value: formatCurrency(overview.unpaidBillsTotal),
+      value: formatCurrency(overview.unpaidBillsTotal, "BRL"),
       sub:
         overview.unpaidBillsCount === 0
           ? "Nenhuma conta pendente"
-          : `${overview.unpaidBillsCount} ${overview.unpaidBillsCount === 1 ? "conta" : "contas"} próximas`,
+          : overview.hasUsd && overview.unpaidBillsTotalUsd > 0
+            ? `+ ${formatCurrency(overview.unpaidBillsTotalUsd, "USD")} · ${overview.unpaidBillsCount} próximas`
+            : `${overview.unpaidBillsCount} ${overview.unpaidBillsCount === 1 ? "conta" : "contas"} próximas`,
       dot: overview.unpaidBillsCount > 0 ? "#c0764f" : "#4f8a6b",
       subCor: overview.unpaidBillsCount > 0 ? "#c0764f" : "#4f8a6b",
     },
@@ -272,8 +283,8 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 7 }}>
                         <span style={{ fontWeight: 600, color: "var(--ds-text)" }}>{c.name}</span>
                         <span style={{ color: "var(--ds-muted)" }}>
-                          <b style={{ color: "var(--ds-text)", fontWeight: 600 }}>{maskValue(formatCurrency(c.spent))}</b> /{" "}
-                          {maskValue(formatCurrency(c.limit))}
+                          <b style={{ color: "var(--ds-text)", fontWeight: 600 }}>{maskValue(formatCurrency(c.spent, c.currency ?? "BRL"))}</b> /{" "}
+                          {maskValue(formatCurrency(c.limit, c.currency ?? "BRL"))}
                         </span>
                       </div>
                       <div style={{ height: 8, background: "var(--ds-track)", borderRadius: 20, overflow: "hidden" }}>
@@ -322,7 +333,7 @@ export default function InícioView({ overview, userName }: InícioViewProps) {
                           </div>
                         </div>
                       </div>
-                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ds-text)" }}>{maskValue(formatCurrency(b.amount))}</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ds-text)" }}>{maskValue(formatCurrency(b.amount, b.currency ?? "BRL"))}</div>
                     </div>
                   );
                 })

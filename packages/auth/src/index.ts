@@ -4,13 +4,14 @@ import { APIError, betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins";
-import { clipText, escapeHtml } from "./html";
+import { invitationEmail, resetPasswordEmail, verificationEmail } from "./emails";
+import { clipText } from "./html";
 import { isPasswordStrong, PASSWORD_WEAK_MESSAGE } from "./password";
 import { digitsOnly, isValidPhone } from "./phone";
 
 const AVATAR_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
-async function sendMail(params: { to: string; subject: string; html: string }) {
+async function sendMail(params: { to: string; subject: string; html: string; text?: string }) {
   try {
     if (!env.RESEND_API_KEY) {
       console.info(`[auth] ${params.subject} (${params.to})\n${params.html}`);
@@ -34,6 +35,7 @@ async function sendMail(params: { to: string; subject: string; html: string }) {
         to: [params.to],
         subject: params.subject,
         html: params.html,
+        ...(params.text ? { text: params.text } : {}),
       }),
     });
 
@@ -106,16 +108,9 @@ export const auth = betterAuth({
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      const name = escapeHtml(user.name);
       await sendMail({
         to: user.email,
-        subject: "Confirme seu e-mail no Bethel",
-        html: `
-          <p>Olá${name ? `, ${name}` : ""}.</p>
-          <p>Confirme seu e-mail para usar o Bethel.</p>
-          <p><a href="${url}">Confirmar e-mail</a></p>
-          <p>Se você não criou esta conta, ignore este e-mail.</p>
-        `,
+        ...verificationEmail({ name: user.name, url }),
       });
     },
   },
@@ -127,16 +122,9 @@ export const auth = betterAuth({
     autoSignIn: false,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      const name = escapeHtml(user.name);
       await sendMail({
         to: user.email,
-        subject: "Redefinir sua senha no Bethel",
-        html: `
-          <p>Olá${name ? `, ${name}` : ""}.</p>
-          <p>Alguém pediu para redefinir a senha da sua conta no Bethel.</p>
-          <p><a href="${url}">Clique aqui para escolher uma senha nova</a>.</p>
-          <p>Se você não pediu isso, ignore este e-mail.</p>
-        `,
+        ...resetPasswordEmail({ name: user.name, url }),
       });
     },
   },
@@ -175,16 +163,13 @@ export const auth = betterAuth({
       requireEmailVerificationOnInvitation: true,
       async sendInvitationEmail(data) {
         const inviteLink = `${env.BETTER_AUTH_URL}/aceitar-convite?id=${encodeURIComponent(data.id)}`;
-        const inviterName = escapeHtml(data.inviter.user.name);
-        const familyName = escapeHtml(data.organization.name);
         await sendMail({
           to: data.email,
-          subject: `Convite para ${familyName} no Bethel`,
-          html: `
-            <p>${inviterName} convidou você para a família ${familyName} no Bethel.</p>
-            <p><a href="${inviteLink}">Aceitar convite</a></p>
-            <p>Se você não esperava este convite, ignore este e-mail.</p>
-          `,
+          ...invitationEmail({
+            inviterName: data.inviter.user.name,
+            familyName: data.organization.name,
+            url: inviteLink,
+          }),
         });
       },
       organizationHooks: {

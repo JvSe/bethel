@@ -9,12 +9,43 @@ enum ContributionType {
   MISSIONS
 }
 
+enum Currency {
+  BRL
+  USD
+}
+
+enum IncomeCategory {
+  SALARY
+  FREELANCE
+  RENT
+  OTHER
+}
+
+model FinancialAccount {
+  id        String       @id @default(uuid())
+  familyId  String
+  family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name      String
+  currency  Currency     @default(BRL)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  transactions     Transaction[]
+  bills            Bill[]
+  contributions    Contribution[]
+  recurringIncomes RecurringIncome[]
+
+  @@index([familyId])
+  @@map("financial_account")
+}
+
 model BudgetCategory {
   id           String       @id @default(uuid())
   familyId     String
   family       Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
   name         String
   monthlyLimit Decimal      @db.Decimal(10, 2)
+  currency     Currency     @default(BRL)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -25,52 +56,86 @@ model BudgetCategory {
 }
 
 model Transaction {
-  id          String          @id @default(uuid())
-  familyId    String
-  family      Organization    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  description String
-  amount      Decimal         @db.Decimal(10, 2)
-  type        TransactionType
-  date        DateTime
-  categoryId  String?
-  category    BudgetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  createdById String?
-  createdBy   User?           @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                String            @id @default(uuid())
+  familyId          String
+  family            Organization      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  accountId         String
+  account           FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  description       String
+  amount            Decimal           @db.Decimal(10, 2)
+  type              TransactionType
+  date              DateTime
+  categoryId        String?
+  category          BudgetCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  incomeCategory    IncomeCategory?
+  recurringIncomeId String?
+  recurringIncome   RecurringIncome?  @relation(fields: [recurringIncomeId], references: [id], onDelete: SetNull)
+  createdById       String?
+  createdBy         User?             @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@index([familyId])
+  @@index([accountId])
   @@index([categoryId])
+  @@index([recurringIncomeId])
   @@map("transaction")
 }
 
-model Contribution {
+model RecurringIncome {
   id          String           @id @default(uuid())
   familyId    String
   family      Organization     @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  type        ContributionType
+  accountId   String
+  account     FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  description String
   amount      Decimal          @db.Decimal(10, 2)
-  date        DateTime
-  createdById String?
-  createdBy   User?            @relation("ContributionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  dayOfMonth  Int
+  category    IncomeCategory   @default(SALARY)
+  active      Boolean          @default(true)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+  transactions Transaction[]
+
   @@index([familyId])
+  @@index([accountId])
+  @@map("recurring_income")
+}
+
+model Contribution {
+  id          String            @id @default(uuid())
+  familyId    String
+  family      Organization      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  type        ContributionType
+  amount      Decimal           @db.Decimal(10, 2)
+  date        DateTime
+  createdById String?
+  createdBy   User?             @relation("ContributionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([familyId])
+  @@index([accountId])
   @@map("contribution")
 }
 
 model Bill {
-  id        String       @id @default(uuid())
+  id        String            @id @default(uuid())
   familyId  String
-  family    Organization @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  family    Organization      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  accountId String
+  account   FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Restrict)
   name      String
-  amount    Decimal      @db.Decimal(10, 2)
+  amount    Decimal           @db.Decimal(10, 2)
   dueDate   DateTime
-  paid      Boolean      @default(false)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  paid      Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@index([familyId])
+  @@index([accountId])
   @@map("bill")
 }

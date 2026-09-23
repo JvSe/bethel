@@ -7,10 +7,19 @@ export function initials(name: string) {
     .join("");
 }
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+export type MoneyCurrency = "BRL" | "USD";
 
-export function formatCurrency(value: number) {
-  return currencyFormatter.format(value);
+const currencyFormatters: Record<MoneyCurrency, Intl.NumberFormat> = {
+  BRL: new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }),
+  USD: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }),
+};
+
+export function formatCurrency(value: number, currency: MoneyCurrency = "BRL") {
+  return currencyFormatters[currency].format(value);
+}
+
+export function currencyLabel(currency: MoneyCurrency) {
+  return currency === "USD" ? "US$" : "R$";
 }
 
 const shortDateFormatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });

@@ -22,10 +22,11 @@ export function titheGoalProgress(titheGiven: number, income: number) {
   return { target, pct };
 }
 
-/** Calendar-day difference. Negative = overdue. */
-export function daysUntil(date: Date, now: Date = new Date()) {
+/** Calendar-day difference. Negative = overdue. Accepts Date or ISO string (RSC props). */
+export function daysUntil(date: Date | string, now: Date = new Date()) {
+  const target = date instanceof Date ? date : new Date(date);
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const end = new Date(target.getFullYear(), target.getMonth(), target.getDate());
   return Math.round((end.getTime() - start.getTime()) / 86_400_000);
 }
 

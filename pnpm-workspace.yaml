@@ -11,7 +11,7 @@ allowBuilds:
   workerd: true
 catalog:
   react-hook-form: ^7.54.0
-  "@hookform/resolvers": ^3.9.1
+  "@hookform/resolvers": ^5.2.1
   dotenv: ^17.2.2
   zod: ^4.1.13
   typescript: ^6

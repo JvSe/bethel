@@ -67,7 +67,9 @@ async function main() {
     prisma.bill.deleteMany(),
     prisma.contribution.deleteMany(),
     prisma.transaction.deleteMany(),
+    prisma.recurringIncome.deleteMany(),
     prisma.budgetCategory.deleteMany(),
+    prisma.financialAccount.deleteMany(),
     prisma.invitation.deleteMany(),
     prisma.member.deleteMany(),
     prisma.organization.deleteMany(),
@@ -114,44 +116,133 @@ async function main() {
   });
 
   // Finanças
+  const [accountBrl, accountUsd] = await Promise.all([
+    prisma.financialAccount.create({
+      data: { familyId: family.id, name: "Conta principal (R$)", currency: "BRL" },
+    }),
+    prisma.financialAccount.create({
+      data: { familyId: family.id, name: "Wise USD", currency: "USD" },
+    }),
+  ]);
+
   const categories = await Promise.all(
     [
-      { name: "Mercado", monthlyLimit: "2000" },
-      { name: "Moradia", monthlyLimit: "2200" },
-      { name: "Contas da casa", monthlyLimit: "800" },
-      { name: "Transporte", monthlyLimit: "700" },
-      { name: "Lazer", monthlyLimit: "600" },
-      { name: "Saúde", monthlyLimit: "500" },
+      { name: "Mercado", monthlyLimit: "2000", currency: "BRL" as const },
+      { name: "Moradia", monthlyLimit: "2200", currency: "BRL" as const },
+      { name: "Contas da casa", monthlyLimit: "800", currency: "BRL" as const },
+      { name: "Transporte", monthlyLimit: "700", currency: "BRL" as const },
+      { name: "Lazer", monthlyLimit: "600", currency: "BRL" as const },
+      { name: "Saúde", monthlyLimit: "500", currency: "BRL" as const },
+      { name: "Ferramentas / SaaS", monthlyLimit: "120", currency: "USD" as const },
     ].map((c) => prisma.budgetCategory.create({ data: { ...c, familyId: family.id } })),
   );
   const categoryByName = Object.fromEntries(categories.map((c) => [c.name, c.id]));
 
+  const salarioJoao = await prisma.recurringIncome.create({
+    data: {
+      familyId: family.id,
+      accountId: accountBrl.id,
+      description: "Salário — João Vitor",
+      amount: "6200",
+      dayOfMonth: 5,
+      category: "SALARY",
+    },
+  });
+
   await prisma.transaction.createMany({
     data: [
-      { description: "Salário — João Vitor", amount: "6200", type: "INCOME" as const, date: daysFromNow(-3), createdById: jv.id },
-      { description: "Supermercado", amount: "284.60", type: "EXPENSE" as const, date: daysFromNow(-2), categoryId: categoryByName.Mercado, createdById: sn.id },
-      { description: "Salário — Sara", amount: "3600", type: "INCOME" as const, date: daysFromNow(-7), createdById: sn.id },
-      { description: "Farmácia", amount: "78.30", type: "EXPENSE" as const, date: daysFromNow(-4), categoryId: categoryByName.Saúde, createdById: sn.id },
-      { description: "Posto de combustível", amount: "200", type: "EXPENSE" as const, date: daysFromNow(-5), categoryId: categoryByName.Transporte, createdById: jv.id },
-      { description: "Restaurante", amount: "146.90", type: "EXPENSE" as const, date: daysFromNow(-6), categoryId: categoryByName.Lazer, createdById: jv.id },
+      {
+        description: "Salário — João Vitor",
+        amount: "6200",
+        type: "INCOME" as const,
+        date: daysFromNow(-3),
+        createdById: jv.id,
+        accountId: accountBrl.id,
+        incomeCategory: "SALARY" as const,
+        recurringIncomeId: salarioJoao.id,
+      },
+      {
+        description: "Supermercado",
+        amount: "284.60",
+        type: "EXPENSE" as const,
+        date: daysFromNow(-2),
+        categoryId: categoryByName.Mercado,
+        createdById: sn.id,
+        accountId: accountBrl.id,
+      },
+      {
+        description: "Salário — Sara",
+        amount: "3600",
+        type: "INCOME" as const,
+        date: daysFromNow(-7),
+        createdById: sn.id,
+        accountId: accountBrl.id,
+        incomeCategory: "SALARY" as const,
+      },
+      {
+        description: "Farmácia",
+        amount: "78.30",
+        type: "EXPENSE" as const,
+        date: daysFromNow(-4),
+        categoryId: categoryByName.Saúde,
+        createdById: sn.id,
+        accountId: accountBrl.id,
+      },
+      {
+        description: "Posto de combustível",
+        amount: "200",
+        type: "EXPENSE" as const,
+        date: daysFromNow(-5),
+        categoryId: categoryByName.Transporte,
+        createdById: jv.id,
+        accountId: accountBrl.id,
+      },
+      {
+        description: "Restaurante",
+        amount: "146.90",
+        type: "EXPENSE" as const,
+        date: daysFromNow(-6),
+        categoryId: categoryByName.Lazer,
+        createdById: jv.id,
+        accountId: accountBrl.id,
+      },
+      {
+        description: "Freela — design",
+        amount: "450",
+        type: "INCOME" as const,
+        date: daysFromNow(-10),
+        createdById: jv.id,
+        accountId: accountUsd.id,
+        incomeCategory: "FREELANCE" as const,
+      },
+      {
+        description: "Cursor Pro",
+        amount: "20",
+        type: "EXPENSE" as const,
+        date: daysFromNow(-8),
+        categoryId: categoryByName["Ferramentas / SaaS"],
+        createdById: jv.id,
+        accountId: accountUsd.id,
+      },
     ].map((t) => ({ ...t, familyId: family.id })),
   });
 
   await prisma.contribution.createMany({
     data: [
-      { type: "TITHE" as const, amount: "980", date: daysFromNow(-7), createdById: jv.id },
-      { type: "OFFERING" as const, amount: "100", date: daysFromNow(-7), createdById: jv.id },
-      { type: "MISSIONS" as const, amount: "50", date: daysFromNow(-7), createdById: jv.id },
+      { type: "TITHE" as const, amount: "980", date: daysFromNow(-7), createdById: jv.id, accountId: accountBrl.id },
+      { type: "OFFERING" as const, amount: "100", date: daysFromNow(-7), createdById: jv.id, accountId: accountBrl.id },
+      { type: "MISSIONS" as const, amount: "50", date: daysFromNow(-7), createdById: jv.id, accountId: accountBrl.id },
     ].map((c) => ({ ...c, familyId: family.id })),
   });
 
   await prisma.bill.createMany({
     data: [
-      { name: "Energia elétrica", amount: "312.40", dueDate: daysFromNow(4) },
-      { name: "Internet", amount: "119.90", dueDate: daysFromNow(7) },
-      { name: "Condomínio", amount: "680", dueDate: daysFromNow(9) },
-      { name: "Escola — Eliza", amount: "940", dueDate: daysFromNow(14) },
-      { name: "Cartão de crédito", amount: "1430", dueDate: daysFromNow(19) },
+      { name: "Energia elétrica", amount: "312.40", dueDate: daysFromNow(4), accountId: accountBrl.id },
+      { name: "Internet", amount: "119.90", dueDate: daysFromNow(7), accountId: accountBrl.id },
+      { name: "Condomínio", amount: "680", dueDate: daysFromNow(9), accountId: accountBrl.id },
+      { name: "Escola — Eliza", amount: "940", dueDate: daysFromNow(14), accountId: accountBrl.id },
+      { name: "Cartão de crédito", amount: "1430", dueDate: daysFromNow(19), accountId: accountBrl.id },
+      { name: "Adobe Creative Cloud", amount: "59.99", dueDate: daysFromNow(11), accountId: accountUsd.id },
     ].map((b) => ({ ...b, familyId: family.id })),
   });
 
