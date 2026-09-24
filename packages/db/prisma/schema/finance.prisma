@@ -60,7 +60,7 @@ model Transaction {
   familyId          String
   family            Organization      @relation(fields: [familyId], references: [id], onDelete: Cascade)
   accountId         String
-  account           FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  account           FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   description       String
   amount            Decimal           @db.Decimal(10, 2)
   type              TransactionType
@@ -86,14 +86,16 @@ model RecurringIncome {
   id          String           @id @default(uuid())
   familyId    String
   family      Organization     @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  accountId   String
-  account     FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  description String
-  amount      Decimal          @db.Decimal(10, 2)
-  dayOfMonth  Int
-  category    IncomeCategory   @default(SALARY)
-  active      Boolean          @default(true)
-  createdAt   DateTime         @default(now())
+  accountId    String
+  account      FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  description  String
+  amount       Decimal          @db.Decimal(10, 2)
+  dayOfMonth   Int
+  category     IncomeCategory   @default(SALARY)
+  active       Boolean          @default(true)
+  skippedYear  Int?
+  skippedMonth Int?
+  createdAt    DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
   transactions Transaction[]
@@ -108,7 +110,7 @@ model Contribution {
   familyId    String
   family      Organization      @relation(fields: [familyId], references: [id], onDelete: Cascade)
   accountId   String
-  account     FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  account     FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   type        ContributionType
   amount      Decimal           @db.Decimal(10, 2)
   date        DateTime
@@ -127,7 +129,7 @@ model Bill {
   familyId  String
   family    Organization      @relation(fields: [familyId], references: [id], onDelete: Cascade)
   accountId String
-  account   FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  account   FinancialAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   name      String
   amount    Decimal           @db.Decimal(10, 2)
   dueDate   DateTime

@@ -12,6 +12,7 @@ export async function getGratitudeEntries(familyId: string) {
     id: entry.id,
     text: entry.text,
     date: entry.date,
+    authorId: entry.authorId,
     authorName: entry.author?.name ?? null,
     authorColor: entry.author?.avatarColor ?? "#9a958b",
   }));
@@ -38,5 +39,11 @@ export async function deleteGratitudeEntry(
       ? { id: entryId, familyId }
       : { id: entryId, familyId, authorId: actor.userId },
   });
-  if (result.count === 0) throw new Error("Gratidão não encontrada.");
+  if (result.count === 0) {
+    throw new Error(
+      actor.isOwner
+        ? "Gratidão não encontrada."
+        : "Só quem escreveu a gratidão, ou o dono da família, pode apagá-la.",
+    );
+  }
 }

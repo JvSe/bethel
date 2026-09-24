@@ -54,6 +54,7 @@ export async function deletePantryItemAction(itemId: string): Promise<ActionResu
     return { success: false, error: error instanceof Error ? error.message : "Erro ao apagar item." };
   }
   revalidatePath("/despensa");
+  revalidatePath("/compras");
   revalidatePath("/inicio");
   return { success: true };
 }

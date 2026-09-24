@@ -595,6 +595,19 @@ export default function FinancasView({
   }
 
   async function removeAccount(id: string) {
+    if (accounts.length <= 1) {
+      toast.error("Mantenha pelo menos uma conta financeira.");
+      return;
+    }
+    const account = accounts.find((a) => a.id === id);
+    const name = account?.name ?? "esta conta";
+    if (
+      !window.confirm(
+        `Apagar "${name}" também remove os lançamentos, contas a pagar, contribuições e receitas recorrentes ligados a ela. Esta ação não tem volta.`,
+      )
+    ) {
+      return;
+    }
     setPendingId(id);
     const result = await deleteFinancialAccountAction(id);
     setPendingId(null);
@@ -1152,7 +1165,7 @@ export default function FinancasView({
           <div style={{ marginBottom: 14 }}>
             <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: "var(--ds-text)" }}>Receitas recorrentes</h3>
             <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--ds-muted)" }}>
-              Geram automaticamente o lançamento do mês na data escolhida.
+              Geram o lançamento do mês. Apagar a receita interrompe os próximos meses. O lançamento já gerado continua na lista e, se for apagado, não volta neste mês.
             </p>
           </div>
           <Dialog
@@ -1306,6 +1319,9 @@ export default function FinancasView({
               ))}
               {contributions.length > 0 && (
                 <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ds-muted)", marginBottom: 4 }}>
+                    Todos os lançamentos
+                  </div>
                   {contributions.map((entry) => (
                     <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
                       <span style={{ fontSize: 12.5, color: "var(--ds-muted)" }}>
@@ -1417,7 +1433,10 @@ export default function FinancasView({
           </Card>
 
           <Card style={{ padding: "20px 22px" }}>
-            <h3 style={{ margin: "0 0 6px", fontSize: 15.5, fontWeight: 700, color: "var(--ds-text)" }}>Movimentações recentes</h3>
+            <h3 style={{ margin: "0 0 6px", fontSize: 15.5, fontWeight: 700, color: "var(--ds-text)" }}>Movimentações</h3>
+            <p style={{ margin: "0 0 6px", fontSize: 12.5, color: "var(--ds-muted)" }}>
+              Todas as entradas e saídas da família, inclusive de meses anteriores.
+            </p>
             {visibleTransactions.length === 0 && (
               <p style={{ fontSize: 13, color: "var(--ds-muted)", padding: "12px 0" }}>
                 Nenhuma transação registrada. Use Registrar receita ou Nova despesa.

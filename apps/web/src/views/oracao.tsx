@@ -40,15 +40,18 @@ interface PrayerRequest {
   text: string;
   status: PrayerStatus;
   createdAt: Date;
+  authorId: string | null;
   authorName: string | null;
   authorColor: string;
 }
 
 interface OracaoViewProps {
   requests: PrayerRequest[];
+  currentUserId: string;
+  isOwner: boolean;
 }
 
-export default function OracaoView({ requests }: OracaoViewProps) {
+export default function OracaoView({ requests, currentUserId, isOwner }: OracaoViewProps) {
   const { searchQuery } = useDashboard();
   const [open, setOpen] = useState(false);
   const visibleRequests = useMemo(
@@ -194,9 +197,11 @@ export default function OracaoView({ requests }: OracaoViewProps) {
                   <div style={{ flex: 1, fontSize: 15, fontWeight: 600, lineHeight: 1.45, color: "var(--ds-text)" }}>
                     {p.text}
                   </div>
-                  <QuietAction danger onClick={() => remove(p.id)}>
-                    Apagar
-                  </QuietAction>
+                  {(isOwner || p.authorId === currentUserId) && (
+                    <QuietAction danger onClick={() => remove(p.id)}>
+                      Apagar
+                    </QuietAction>
+                  )}
                 </div>
               );
             })}

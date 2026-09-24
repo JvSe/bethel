@@ -81,10 +81,11 @@ async function ensureRecurringIncomesForMonth(familyId: string) {
     const alreadyCreated = new Set(existing.map((t) => t.recurringIncomeId).filter(Boolean));
 
     const year = monthStart.getFullYear();
-    const month = monthStart.getMonth();
+    const monthIndex = monthStart.getMonth();
 
     for (const item of recurring) {
       if (alreadyCreated.has(item.id)) continue;
+      if (item.skippedYear === year && item.skippedMonth === monthIndex + 1) continue;
       const day = Math.min(Math.max(item.dayOfMonth, 1), 28);
       await prisma.transaction.create({
         data: {
@@ -93,7 +94,7 @@ async function ensureRecurringIncomesForMonth(familyId: string) {
           description: item.description,
           amount: item.amount,
           type: TransactionType.INCOME,
-          date: new Date(year, month, day),
+          date: new Date(year, monthIndex, day),
           incomeCategory: item.category,
           recurringIncomeId: item.id,
         },
@@ -111,7 +112,7 @@ export async function getFinanceOverview(familyId: string) {
   const monthStart = startOfMonth();
   const monthEnd = startOfNextMonth();
 
-  const [accounts, categories, transactionsThisMonth, recentTransactions, contributionsThisMonth, bills, recurringIncomes] =
+  const [accounts, categories, transactionsThisMonth, allTransactions, contributions, bills, recurringIncomes] =
     await Promise.all([
       prisma.financialAccount.findMany({ where: { familyId }, orderBy: [{ currency: "asc" }, { name: "asc" }] }),
       prisma.budgetCategory.findMany({ where: { familyId }, orderBy: { name: "asc" } }),
@@ -126,11 +127,11 @@ export async function getFinanceOverview(familyId: string) {
           account: { select: { id: true, name: true, currency: true } },
         },
         orderBy: { date: "desc" },
-        take: 12,
       }),
       prisma.contribution.findMany({
-        where: { familyId, date: { gte: monthStart, lt: monthEnd } },
+        where: { familyId },
         include: { account: { select: { id: true, name: true, currency: true } } },
+        orderBy: { date: "desc" },
       }),
       prisma.bill.findMany({
         where: { familyId },
@@ -179,6 +180,7 @@ export async function getFinanceOverview(familyId: string) {
     return { id: c.id, name: c.name, spent, limit, pct, over, currency: c.currency };
   });
 
+  const contributionsThisMonth = contributions.filter((c) => c.date >= monthStart && c.date < monthEnd);
   const contributionsByType = new Map<ContributionType, number>();
   let contributionsTotalBrl = 0;
   for (const c of contributionsThisMonth) {
@@ -217,7 +219,7 @@ export async function getFinanceOverview(familyId: string) {
     }),
     budget,
     dizimo,
-    transactions: recentTransactions
+    transactions: allTransactions
       .filter((t) => t.account)
       .map((t) => ({
         id: t.id,
@@ -244,9 +246,8 @@ export async function getFinanceOverview(familyId: string) {
         accountName: b.account.name,
         currency: b.account.currency,
       })),
-    contributions: [...contributionsThisMonth]
+    contributions: contributions
       .filter((c) => c.account)
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
       .map((c) => ({
         id: c.id,
         type: c.type,
@@ -292,19 +293,20 @@ export async function updateFinancialAccount(familyId: string, accountId: string
 }
 
 export async function deleteFinancialAccount(familyId: string, accountId: string) {
-  const [txCount, billCount, contribCount, recurringCount, accountCount] = await Promise.all([
-    prisma.transaction.count({ where: { familyId, accountId } }),
-    prisma.bill.count({ where: { familyId, accountId } }),
-    prisma.contribution.count({ where: { familyId, accountId } }),
-    prisma.recurringIncome.count({ where: { familyId, accountId } }),
+  const [accountCount, account] = await Promise.all([
     prisma.financialAccount.count({ where: { familyId } }),
+    prisma.financialAccount.findFirst({ where: { id: accountId, familyId }, select: { id: true } }),
   ]);
+  if (!account) throw new Error("Conta financeira não encontrada.");
   if (accountCount <= 1) throw new Error("Mantenha pelo menos uma conta financeira.");
-  if (txCount + billCount + contribCount + recurringCount > 0) {
-    throw new Error("Não é possível apagar uma conta com lançamentos vinculados.");
-  }
-  const result = await prisma.financialAccount.deleteMany({ where: { id: accountId, familyId } });
-  if (result.count === 0) throw new Error("Conta financeira não encontrada.");
+
+  await prisma.$transaction([
+    prisma.transaction.deleteMany({ where: { familyId, accountId } }),
+    prisma.bill.deleteMany({ where: { familyId, accountId } }),
+    prisma.contribution.deleteMany({ where: { familyId, accountId } }),
+    prisma.recurringIncome.deleteMany({ where: { familyId, accountId } }),
+    prisma.financialAccount.deleteMany({ where: { id: accountId, familyId } }),
+  ]);
 }
 
 export async function createTransaction(familyId: string, userId: string, input: CreateTransactionInput) {
@@ -354,10 +356,31 @@ export async function updateTransaction(familyId: string, transactionId: string,
 }
 
 export async function deleteTransaction(familyId: string, transactionId: string) {
-  const result = await prisma.transaction.deleteMany({
+  const existing = await prisma.transaction.findFirst({
     where: { id: transactionId, familyId },
+    select: { recurringIncomeId: true, date: true },
   });
-  if (result.count === 0) throw new Error("Transação não encontrada.");
+  if (!existing) throw new Error("Transação não encontrada.");
+
+  const monthStart = startOfMonth();
+  const monthEnd = startOfNextMonth();
+  const blocksRegeneration =
+    existing.recurringIncomeId != null && existing.date >= monthStart && existing.date < monthEnd;
+
+  await prisma.$transaction([
+    ...(blocksRegeneration
+      ? [
+          prisma.recurringIncome.updateMany({
+            where: { id: existing.recurringIncomeId!, familyId },
+            data: {
+              skippedYear: monthStart.getFullYear(),
+              skippedMonth: monthStart.getMonth() + 1,
+            },
+          }),
+        ]
+      : []),
+    prisma.transaction.deleteMany({ where: { id: transactionId, familyId } }),
+  ]);
 }
 
 export async function createBill(familyId: string, input: CreateBillInput) {

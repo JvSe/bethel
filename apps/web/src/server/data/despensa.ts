@@ -44,8 +44,14 @@ export async function updatePantryItem(familyId: string, itemId: string, input: 
 }
 
 export async function deletePantryItem(familyId: string, itemId: string) {
-  const result = await prisma.pantryItem.deleteMany({
+  const existing = await prisma.pantryItem.findFirst({
     where: { id: itemId, familyId },
+    select: { id: true },
   });
-  if (result.count === 0) throw new Error("Item da despensa não encontrado.");
+  if (!existing) throw new Error("Item da despensa não encontrado.");
+
+  await prisma.$transaction([
+    prisma.shoppingItem.deleteMany({ where: { familyId, sourcePantryItemId: itemId } }),
+    prisma.pantryItem.deleteMany({ where: { id: itemId, familyId } }),
+  ]);
 }

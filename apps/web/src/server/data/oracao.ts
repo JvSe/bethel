@@ -13,6 +13,7 @@ export async function getPrayerRequests(familyId: string) {
     text: request.text,
     status: request.status,
     createdAt: request.createdAt,
+    authorId: request.authorId,
     authorName: request.author?.name ?? null,
     authorColor: request.author?.avatarColor ?? "#9a958b",
   }));
@@ -49,5 +50,11 @@ export async function deletePrayerRequest(
       ? { id: requestId, familyId }
       : { id: requestId, familyId, authorId: actor.userId },
   });
-  if (result.count === 0) throw new Error("Pedido de oração não encontrado.");
+  if (result.count === 0) {
+    throw new Error(
+      actor.isOwner
+        ? "Pedido de oração não encontrado."
+        : "Só quem escreveu o pedido, ou o dono da família, pode apagá-lo.",
+    );
+  }
 }

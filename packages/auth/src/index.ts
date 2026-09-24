@@ -188,6 +188,16 @@ export const auth = betterAuth({
             });
           }
         },
+        async beforeDeleteOrganization({ organization }) {
+          const familyId = organization.id;
+          await prisma.$transaction([
+            prisma.transaction.deleteMany({ where: { familyId } }),
+            prisma.bill.deleteMany({ where: { familyId } }),
+            prisma.contribution.deleteMany({ where: { familyId } }),
+            prisma.recurringIncome.deleteMany({ where: { familyId } }),
+            prisma.financialAccount.deleteMany({ where: { familyId } }),
+          ]);
+        },
       },
     }),
   ],

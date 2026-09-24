@@ -28,15 +28,18 @@ interface GratitudeEntry {
   id: string;
   text: string;
   date: Date;
+  authorId: string | null;
   authorName: string | null;
   authorColor: string;
 }
 
 interface GratidaoViewProps {
   entries: GratitudeEntry[];
+  currentUserId: string;
+  isOwner: boolean;
 }
 
-export default function GratidaoView({ entries }: GratidaoViewProps) {
+export default function GratidaoView({ entries, currentUserId, isOwner }: GratidaoViewProps) {
   const { searchQuery } = useDashboard();
   const [open, setOpen] = useState(false);
   const visibleEntries = useMemo(
@@ -167,9 +170,11 @@ export default function GratidaoView({ entries }: GratidaoViewProps) {
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ds-text)" }}>{g.authorName ?? "Alguém da família"}</div>
                   <div style={{ fontSize: 12, color: "var(--ds-muted)", marginLeft: "auto" }}>{formatWeekdayDate(g.date)}</div>
                 </div>
-                <QuietAction danger onClick={() => remove(g.id)}>
-                  Apagar
-                </QuietAction>
+                {(isOwner || g.authorId === currentUserId) && (
+                  <QuietAction danger onClick={() => remove(g.id)}>
+                    Apagar
+                  </QuietAction>
+                )}
               </div>
             ))}
           </div>
