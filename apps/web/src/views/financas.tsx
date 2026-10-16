@@ -24,6 +24,7 @@ import {
 import { FloatingComposeMenu, type ComposeGroup } from "@/components/floating-compose-menu";
 import TopBar from "@/components/top-bar";
 import { QuietAction } from "@/components/quiet-action";
+import Link from "next/link";
 import { useDashboard } from "@/contexts/dashboard-context";
 import { formatCurrency, formatMonthAbbrev, formatShortDate, matchesQuery, toDateInput, type MoneyCurrency } from "@/lib/format";
 import { daysUntil } from "@/lib/calc";
@@ -42,6 +43,7 @@ import {
   type CreateTransactionInput,
 } from "@/server/validators/financas";
 import { Button } from "@bethel/ui/components/button";
+import { Checkbox } from "@bethel/ui/components/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +55,7 @@ import {
 import { Input } from "@bethel/ui/components/input";
 import { Label } from "@bethel/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bethel/ui/components/select";
-import { ArrowDown, ArrowUp, Bill, Candle, Card as CardIcon, Category, Repeat } from "reicon-react";
+import { ArrowDown, ArrowUp, Bill, Candle, Card as CardIcon, Category } from "reicon-react";
 import { useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -258,6 +260,9 @@ export default function FinancasView({
   const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
   const [editingAccount, setEditingAccount] = useState<FinancialAccountRow | null>(null);
   const [editingRecurring, setEditingRecurring] = useState<RecurringIncomeRow | null>(null);
+  const [incomeRecurring, setIncomeRecurring] = useState(false);
+  const [recurringDay, setRecurringDay] = useState("5");
+  const [recurringDayError, setRecurringDayError] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const defaultAcc = defaultAccountId(accounts, "BRL");
@@ -313,6 +318,9 @@ export default function FinancasView({
 
   function openTransactionDialog(type: TransactionType) {
     setEditingTransaction(null);
+    setIncomeRecurring(false);
+    setRecurringDay(String(Math.min(new Date().getDate(), 28)));
+    setRecurringDayError(null);
     transactionForm.reset({
       description: "",
       amount: undefined as unknown as number,
@@ -326,6 +334,41 @@ export default function FinancasView({
   }
 
   async function onSubmitTransaction(raw: CreateTransactionInput) {
+    if (!editingTransaction && raw.type === TransactionType.INCOME && incomeRecurring) {
+      const payload = {
+        description: raw.description,
+        amount: raw.amount,
+        accountId: raw.accountId,
+        dayOfMonth: recurringDay,
+        category: raw.incomeCategory ?? IncomeCategory.SALARY,
+      };
+      const recurringParsed = createRecurringIncomeSchema.safeParse(payload);
+      if (!recurringParsed.success) {
+        setRecurringDayError(null);
+        const issue = recurringParsed.error.issues[0];
+        const field = issue?.path[0];
+        if (field === "dayOfMonth") {
+          setRecurringDayError(issue.message);
+        } else if (field != null) {
+          transactionForm.setError(String(field) as never, { message: issue.message });
+        }
+        toast.error(issue?.message ?? "Dados inválidos.");
+        return;
+      }
+      const recurringResult = await createRecurringIncomeAction(recurringParsed.data);
+      if (!recurringResult.success) {
+        toast.error(recurringResult.error);
+        return;
+      }
+      toast.success("Receita recorrente criada.");
+      transactionForm.reset();
+      setIncomeRecurring(false);
+      setRecurringDayError(null);
+      setEditingTransaction(null);
+      setTransactionOpen(false);
+      return;
+    }
+
     const parsed = applyZodErrors(transactionForm, createTransactionSchema, raw);
     if (!parsed.success) return;
     const data = parsed.data;
@@ -486,18 +529,6 @@ export default function FinancasView({
     setRecurringOpen(true);
   }
 
-  function openNewRecurring() {
-    setEditingRecurring(null);
-    recurringForm.reset({
-      description: "",
-      amount: undefined as unknown as number,
-      accountId: defaultAcc,
-      dayOfMonth: 5,
-      category: IncomeCategory.SALARY,
-    });
-    setRecurringOpen(true);
-  }
-
   const composeGroups: ComposeGroup[] = [
     {
       id: "actions",
@@ -505,7 +536,7 @@ export default function FinancasView({
         {
           id: "income",
           label: "Registrar receita",
-          description: "Salário, freelance ou outra entrada",
+          description: "Entrada única ou recorrente todo mês",
           icon: <ArrowUp size={18} />,
           onSelect: () => openTransactionDialog(TransactionType.INCOME),
         },
@@ -554,13 +585,6 @@ export default function FinancasView({
             contributionForm.reset({ type: ContributionType.TITHE, amount: undefined as unknown as number, date: today, accountId: defaultAcc });
             setContributionOpen(true);
           },
-        },
-        {
-          id: "recurring",
-          label: "Receita recorrente",
-          description: "Entrada automática todo mês",
-          icon: <Repeat size={18} />,
-          onSelect: openNewRecurring,
         },
       ],
     },
@@ -901,6 +925,8 @@ export default function FinancasView({
                 if (!next) {
                   transactionForm.reset();
                   setEditingTransaction(null);
+                  setIncomeRecurring(false);
+                  setRecurringDayError(null);
                 }
               }}
             >
@@ -915,7 +941,9 @@ export default function FinancasView({
                   </DialogTitle>
                   <DialogDescription>
                     {watchedType === TransactionType.INCOME
-                      ? "Lance uma entrada na conta financeira correta."
+                      ? incomeRecurring
+                        ? "Essa entrada será lançada todo mês no dia escolhido."
+                        : "Lance uma entrada na conta certa. Marque recorrente para repetir todo mês."
                       : "Lance um gasto vinculado à conta e à categoria."}
                   </DialogDescription>
                 </DialogHeader>
@@ -1007,13 +1035,49 @@ export default function FinancasView({
                       />
                     </div>
                   )}
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="tx-date">Data</Label>
-                    <Input id="tx-date" type="date" {...transactionForm.register("date")} />
-                    {transactionForm.formState.errors.date && (
-                      <p className="text-sm text-destructive">{transactionForm.formState.errors.date.message}</p>
-                    )}
-                  </div>
+                  {watchedType === TransactionType.INCOME && !editingTransaction && (
+                    <div className="flex flex-col gap-3">
+                      <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                        <Checkbox
+                          checked={incomeRecurring}
+                          onCheckedChange={(checked) => {
+                            setIncomeRecurring(checked);
+                            setRecurringDayError(null);
+                          }}
+                        />
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ds-text)" }}>Recorrente</span>
+                      </label>
+                      {incomeRecurring && (
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="tx-day">Dia do mês</Label>
+                          <Input
+                            id="tx-day"
+                            type="number"
+                            min={1}
+                            max={28}
+                            value={recurringDay}
+                            onChange={(event) => {
+                              setRecurringDay(event.target.value);
+                              setRecurringDayError(null);
+                            }}
+                          />
+                          <p style={{ margin: 0, fontSize: 12, color: "var(--ds-muted)" }}>
+                            O lançamento entra todo mês neste dia, inclusive neste mês.
+                          </p>
+                          {recurringDayError && <p className="text-sm text-destructive">{recurringDayError}</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!(watchedType === TransactionType.INCOME && incomeRecurring && !editingTransaction) && (
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="tx-date">Data</Label>
+                      <Input id="tx-date" type="date" {...transactionForm.register("date")} />
+                      {transactionForm.formState.errors.date && (
+                        <p className="text-sm text-destructive">{transactionForm.formState.errors.date.message}</p>
+                      )}
+                    </div>
+                  )}
                   <DialogFooter>
                     <Button type="submit" disabled={transactionForm.formState.isSubmitting} className="w-full">
                       {transactionForm.formState.isSubmitting
@@ -1021,7 +1085,9 @@ export default function FinancasView({
                         : editingTransaction
                           ? "Salvar"
                           : watchedType === TransactionType.INCOME
-                            ? "Registrar receita"
+                            ? incomeRecurring
+                              ? "Criar receita recorrente"
+                              : "Registrar receita"
                             : "Registrar despesa"}
                     </Button>
                   </DialogFooter>
@@ -1049,27 +1115,33 @@ export default function FinancasView({
               <div style={{ fontSize: 12.5, fontWeight: 600, opacity: 0.85, marginTop: 6 }}>Receitas − despesas em dólar</div>
             </div>
           )}
-          <Card style={{ padding: 22 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ds-muted)" }}>Receitas · R$</div>
-            <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 700, fontSize: 28, marginTop: 10, letterSpacing: "-0.02em", color: "#4f8a6b" }}>
-              {maskValue(formatCurrency(brl.income, "BRL"))}
-            </div>
-            {hasUsd && (
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: "#4f8a6b", marginTop: 6 }}>
-                + {maskValue(formatCurrency(usd.income, "USD"))}
+          <Link href="/financas/receitas" style={{ textDecoration: "none", color: "inherit" }}>
+            <Card style={{ padding: 22, cursor: "pointer", height: "100%" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ds-muted)" }}>Receitas · R$</div>
+              <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 700, fontSize: 28, marginTop: 10, letterSpacing: "-0.02em", color: "#4f8a6b" }}>
+                {maskValue(formatCurrency(brl.income, "BRL"))}
               </div>
-            )}
-            {!hasUsd && <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ds-muted)", marginTop: 6 }}>Total de entradas no mês</div>}
-          </Card>
-          <Card style={{ padding: 22 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ds-muted)" }}>Despesas · R$</div>
-            <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 700, fontSize: 28, marginTop: 10, letterSpacing: "-0.02em", color: "#c0764f" }}>
-              {maskValue(formatCurrency(brl.expense, "BRL"))}
-            </div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ds-muted)", marginTop: 6 }}>
-              {hasUsd ? `+ ${maskValue(formatCurrency(usd.expense, "USD"))}` : `${despesasPct}% da receita`}
-            </div>
-          </Card>
+              {hasUsd && (
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: "#4f8a6b", marginTop: 6 }}>
+                  + {maskValue(formatCurrency(usd.income, "USD"))}
+                </div>
+              )}
+              {!hasUsd && <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ds-muted)", marginTop: 6 }}>Total de entradas no mês</div>}
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ds-accent)", marginTop: 10 }}>Ver todas as receitas</div>
+            </Card>
+          </Link>
+          <Link href="/financas/despesas" style={{ textDecoration: "none", color: "inherit" }}>
+            <Card style={{ padding: 22, cursor: "pointer", height: "100%" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ds-muted)" }}>Despesas · R$</div>
+              <div style={{ fontFamily: "var(--font-bricolage), sans-serif", fontWeight: 700, fontSize: 28, marginTop: 10, letterSpacing: "-0.02em", color: "#c0764f" }}>
+                {maskValue(formatCurrency(brl.expense, "BRL"))}
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ds-muted)", marginTop: 6 }}>
+                {hasUsd ? `+ ${maskValue(formatCurrency(usd.expense, "USD"))}` : `${despesasPct}% da receita`}
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ds-accent)", marginTop: 10 }}>Ver todas as despesas</div>
+            </Card>
+          </Link>
         </div>
 
         {/* Contas financeiras */}
@@ -1254,7 +1326,7 @@ export default function FinancasView({
           </Dialog>
           {visibleRecurring.length === 0 && (
             <p style={{ fontSize: 13, color: "var(--ds-muted)", padding: "8px 0" }}>
-              Nenhuma receita recorrente. Cadastre o salário para não esquecer de lançar todo mês.
+              Nenhuma receita recorrente. Em Registrar receita, marque Recorrente para lançar todo mês.
             </p>
           )}
           {visibleRecurring.map((r) => (

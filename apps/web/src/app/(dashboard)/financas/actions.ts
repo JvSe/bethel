@@ -37,6 +37,8 @@ type ActionResult = { success: true } | { success: false; error: string };
 
 function revalidateFinancas() {
   revalidatePath("/financas");
+  revalidatePath("/financas/receitas");
+  revalidatePath("/financas/despesas");
   revalidatePath("/inicio");
 }
 

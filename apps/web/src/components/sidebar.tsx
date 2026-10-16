@@ -116,7 +116,7 @@ export default function Sidebar({ familyId, familyName, members, isOwner, curren
               {section}
             </div>
             {items.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href;
+              const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <Link
                   key={href}

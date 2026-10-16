@@ -233,6 +233,7 @@ export async function getFinanceOverview(familyId: string) {
         accountId: t.accountId,
         accountName: t.account.name,
         currency: t.account.currency,
+        recurring: Boolean(t.recurringIncomeId),
       })),
     bills: bills
       .filter((b) => b.account)
